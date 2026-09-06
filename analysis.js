@@ -1,10 +1,12 @@
 let results = [];
+let frequencyChart = null;
+
 
 async function loadAnalysis() {
 
     try {
 
-        const response = await fetch("data/results.json");
+        const response = await fetch("../data/results.json");
 
         if (!response.ok) {
             throw new Error("Data load failed");
@@ -15,6 +17,7 @@ async function loadAnalysis() {
         showStatistics();
         showFrequency();
         showRecentResults();
+        createChart();
 
     } catch (error) {
 
@@ -80,7 +83,7 @@ function showStatistics() {
 }
 
 
-// Frequency distribution
+// Frequency list
 function showFrequency() {
 
     const container =
@@ -98,7 +101,7 @@ function showFrequency() {
 
     const sorted =
         Object.entries(frequency)
-            .sort((a, b) => b[1] - a[1]);
+            .sort((a, b) => Number(a[0]) - Number(b[0]));
 
 
     container.innerHTML = "";
@@ -129,6 +132,75 @@ function showFrequency() {
         container.appendChild(item);
 
     });
+
+}
+
+
+// Frequency chart
+function createChart() {
+
+    const canvas =
+        document.getElementById("frequencyChart");
+
+    if (!canvas) return;
+
+
+    const frequency = {};
+
+    results.forEach(value => {
+
+        frequency[value] =
+            (frequency[value] || 0) + 1;
+
+    });
+
+
+    const labels =
+        Object.keys(frequency)
+            .sort((a, b) => Number(a) - Number(b));
+
+    const values =
+        labels.map(value => frequency[value]);
+
+
+    frequencyChart =
+        new Chart(canvas, {
+
+            type: "bar",
+
+            data: {
+                labels: labels,
+
+                datasets: [{
+                    label: "Occurrences",
+                    data: values
+                }]
+            },
+
+            options: {
+
+                responsive: true,
+
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+
+                scales: {
+
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+
+                }
+
+            }
+
+        });
 
 }
 
