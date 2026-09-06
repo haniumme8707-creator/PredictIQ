@@ -444,3 +444,11 @@ footer {
     }
 
   }
+@media (max-width: 768px) {
+
+    .navbar nav.mobile-open {
+        display: flex;
+        flex-direction: column;
+    }
+
+}
