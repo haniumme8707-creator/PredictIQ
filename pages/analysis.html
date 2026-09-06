@@ -8,6 +8,7 @@
 
     <link rel="stylesheet" href="../style.css">
 </head>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <body>
 
@@ -78,9 +79,13 @@
             <h2>Value Distribution</h2>
         </div>
 
-        <div id="frequencyList" class="analysis-list">
-            Loading data...
-        </div>
+        <div class="chart-card">
+    <canvas id="frequencyChart"></canvas>
+</div>
+
+<div id="frequencyList" class="analysis-list">
+    Loading data...
+</div>
 
     </section>
 
