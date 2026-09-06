@@ -2,10 +2,9 @@ let results = [];
 let frequencyChart = null;
 
 
+// Load data
 async function loadAnalysis() {
-
     try {
-
         const response = await fetch("../data/results.json");
 
         if (!response.ok) {
@@ -20,12 +19,13 @@ async function loadAnalysis() {
         createChart();
 
     } catch (error) {
+        console.error("Analysis error:", error);
 
-        console.error(error);
+        const list = document.getElementById("frequencyList");
 
-        document.getElementById("frequencyList").textContent =
-            "Unable to load data.";
-
+        if (list) {
+            list.textContent = "Unable to load data.";
+        }
     }
 }
 
@@ -38,7 +38,7 @@ function showStatistics() {
     const total = results.length;
 
     const sum = results.reduce(
-        (a, b) => a + b,
+        (a, b) => a + Number(b),
         0
     );
 
@@ -68,17 +68,16 @@ function showStatistics() {
     });
 
 
-    document.getElementById("totalData")
-        .textContent = total;
+    document.getElementById("totalData").textContent =
+        total;
 
-    document.getElementById("average")
-        .textContent = average.toFixed(2);
+    document.getElementById("average").textContent =
+        average.toFixed(2);
 
-    document.getElementById("mostCommon")
-        .textContent = mostCommon;
+    document.getElementById("mostCommon").textContent =
+        mostCommon;
 
-    document.getElementById("range")
-        .textContent =
+    document.getElementById("range").textContent =
         minimum + " – " + maximum;
 }
 
@@ -89,13 +88,13 @@ function showFrequency() {
     const container =
         document.getElementById("frequencyList");
 
+    if (!container) return;
+
     const frequency = {};
 
     results.forEach(value => {
-
         frequency[value] =
             (frequency[value] || 0) + 1;
-
     });
 
 
@@ -136,22 +135,22 @@ function showFrequency() {
 }
 
 
-// Frequency chart
+// Chart
 function createChart() {
 
     const canvas =
         document.getElementById("frequencyChart");
 
-    if (!canvas) return;
+    if (!canvas || typeof Chart === "undefined") {
+        return;
+    }
 
 
     const frequency = {};
 
     results.forEach(value => {
-
         frequency[value] =
             (frequency[value] || 0) + 1;
-
     });
 
 
@@ -178,7 +177,6 @@ function createChart() {
             },
 
             options: {
-
                 responsive: true,
 
                 plugins: {
@@ -188,16 +186,13 @@ function createChart() {
                 },
 
                 scales: {
-
                     y: {
                         beginAtZero: true,
                         ticks: {
                             stepSize: 1
                         }
                     }
-
                 }
-
             }
 
         });
@@ -210,6 +205,8 @@ function showRecentResults() {
 
     const container =
         document.getElementById("recentResults");
+
+    if (!container) return;
 
     const recent =
         results.slice(-10).reverse();
@@ -236,14 +233,24 @@ function showRecentResults() {
 }
 
 
-loadAnalysis();
+// Hamburger menu
+const menuButton =
+    document.getElementById("menuBtn");
 
-// Mobile menu
-const menuToggle = document.querySelector(".menu-toggle");
-const navLinks = document.querySelector(".nav-links");
+const navigation =
+    document.querySelector(".navbar nav");
 
-if (menuToggle && navLinks) {
-    menuToggle.addEventListener("click", () => {
-        navLinks.classList.toggle("active");
+
+if (menuButton && navigation) {
+
+    menuButton.addEventListener("click", () => {
+
+        navigation.classList.toggle("mobile-open");
+
     });
+
 }
+
+
+// Start
+loadAnalysis();
