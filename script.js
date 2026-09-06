@@ -1,30 +1,36 @@
-// ================================
-// PredictIQ — Dashboard Logic
-// ================================
+let results = [];
 
-// Demo dataset
-// Later we will replace this with
-// a proper dataset + prediction model.
+async function loadResults() {
+    try {
+        const response = await fetch("data/results.json");
 
-const results = [
-    7, 3, 8, 8, 2,
-    6, 4, 7, 5, 8,
-    3, 6, 7, 2, 5,
-    8, 4, 6, 7, 3
-];
+        if (!response.ok) {
+            throw new Error("Data load nahi hua");
+        }
+
+        results = await response.json();
+
+        updateDashboard();
+
+    } catch (error) {
+        console.error("Error:", error);
+
+        const dataCount = document.getElementById("dataCount");
+
+        if (dataCount) {
+            dataCount.textContent = "Error";
+        }
+    }
+}
 
 
-// ================================
-// BASIC STATISTICS
-// ================================
-
+// Calculate basic statistics
 function calculateStats(data) {
 
-    const total = data.length;
-
-    if (total === 0) {
+    if (!data.length) {
         return {
-            mostCommon: null,
+            mostCommon: "-",
+            frequency: 0,
             average: 0,
             total: 0
         };
@@ -32,175 +38,134 @@ function calculateStats(data) {
 
     const frequency = {};
 
-    data.forEach(number => {
-        frequency[number] = (frequency[number] || 0) + 1;
+    data.forEach(value => {
+        frequency[value] = (frequency[value] || 0) + 1;
     });
 
     let mostCommon = data[0];
+    let highestFrequency = frequency[data[0]];
 
-    Object.keys(frequency).forEach(number => {
+    Object.keys(frequency).forEach(value => {
 
-        if (
-            frequency[number] >
-            (frequency[mostCommon] || 0)
-        ) {
-            mostCommon = Number(number);
+        if (frequency[value] > highestFrequency) {
+            mostCommon = Number(value);
+            highestFrequency = frequency[value];
         }
 
     });
 
-    const sum = data.reduce(
-        (total, number) => total + number,
-        0
-    );
+    const total = data.length;
 
-    const average = sum / total;
+    const average =
+        data.reduce((sum, value) => sum + value, 0) / total;
 
     return {
         mostCommon,
+        frequency: highestFrequency,
         average,
         total
     };
 }
 
 
-// ================================
-// SIMPLE DEMO PREDICTION
-// ================================
-
+// Generate demo prediction
 function generatePrediction(data) {
 
-    if (data.length === 0) {
+    const stats = calculateStats(data);
+
+    if (!data.length) {
         return {
-            prediction: "—",
+            value: "-",
             confidence: 0
         };
     }
 
-    const stats = calculateStats(data);
-
-    /*
-       IMPORTANT:
-       This is only a demonstration
-       statistical rule.
-
-       It is NOT a guaranteed
-       prediction model.
-    */
-
-    const prediction = stats.mostCommon;
-
-    const frequency = data.filter(
-        value => value === prediction
-    ).length;
-
     const confidence =
-        Math.round((frequency / data.length) * 100);
+        (stats.frequency / stats.total) * 100;
 
     return {
-        prediction,
-        confidence
+        value: stats.mostCommon,
+        confidence: confidence
     };
 }
 
 
-// ================================
-// UPDATE DASHBOARD
-// ================================
-
+// Update dashboard
 function updateDashboard() {
 
+    const prediction = generatePrediction(results);
     const stats = calculateStats(results);
 
-    const prediction =
-        generatePrediction(results);
+    const predictionValue =
+        document.getElementById("predictionValue");
+
+    const confidence =
+        document.getElementById("confidence");
+
+    const dataCount =
+        document.getElementById("dataCount");
+
+    const accuracy =
+        document.getElementById("accuracy");
+
+    const totalPredictions =
+        document.getElementById("totalPredictions");
+
+    const correctPredictions =
+        document.getElementById("correctPredictions");
+
+    const wrongPredictions =
+        document.getElementById("wrongPredictions");
 
 
-    // Prediction
-    document.getElementById(
-        "predictionValue"
-    ).textContent = prediction.prediction;
+    if (predictionValue) {
+        predictionValue.textContent = prediction.value;
+    }
+
+    if (confidence) {
+        confidence.textContent =
+            prediction.confidence.toFixed(1) + "%";
+    }
+
+    if (dataCount) {
+        dataCount.textContent = stats.total;
+    }
 
 
-    // Confidence
-    document.getElementById(
-        "confidence"
-    ).textContent =
-        prediction.confidence + "%";
+    // Demo values for now
+    if (accuracy) {
+        accuracy.textContent = "—";
+    }
 
+    if (totalPredictions) {
+        totalPredictions.textContent = "0";
+    }
 
-    // Data count
-    document.getElementById(
-        "dataCount"
-    ).textContent = stats.total;
+    if (correctPredictions) {
+        correctPredictions.textContent = "0";
+    }
 
-
-    // Demo statistics
-    document.getElementById(
-        "accuracy"
-    ).textContent = "—";
-
-
-    document.getElementById(
-        "totalPredictions"
-    ).textContent = "0";
-
-
-    document.getElementById(
-        "correctPredictions"
-    ).textContent = "0";
-
-
-    document.getElementById(
-        "wrongPredictions"
-    ).textContent = "0";
+    if (wrongPredictions) {
+        wrongPredictions.textContent = "0";
+    }
 }
 
 
-// ================================
-// MOBILE MENU
-// ================================
+// Mobile menu
+const menuToggle =
+    document.querySelector(".menu-toggle");
 
-const menuBtn =
-    document.getElementById("menuBtn");
+const navLinks =
+    document.querySelector(".nav-links");
 
-const nav =
-    document.querySelector("nav");
+if (menuToggle && navLinks) {
 
-
-if (menuBtn) {
-
-    menuBtn.addEventListener(
-        "click",
-        () => {
-
-            if (nav.style.display === "flex") {
-
-                nav.style.display = "none";
-
-            } else {
-
-                nav.style.display = "flex";
-                nav.style.flexDirection = "column";
-                nav.style.position = "absolute";
-                nav.style.top = "74px";
-                nav.style.right = "5%";
-                nav.style.padding = "20px";
-
-                nav.style.background = "#10131a";
-                nav.style.border = "1px solid rgba(255,255,255,0.08)";
-                nav.style.borderRadius = "15px";
-
-            }
-
-        }
-    );
+    menuToggle.addEventListener("click", () => {
+        navLinks.classList.toggle("active");
+    });
 
 }
 
 
-// ================================
-// START
-// ================================
-
-updateDashboard();
+// Start application
+loadResults();
