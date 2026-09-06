@@ -1,1 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <title>Analysis | PredictIQ</title>
+
+    <link rel="stylesheet" href="../style.css">
+</head>
+
+<body>
+
+<header class="navbar">
+
+    <div class="logo">
+        PredictIQ
+    </div>
+
+    <nav class="nav-links">
+        <a href="../index.html">Dashboard</a>
+        <a href="analysis.html" class="active">Analysis</a>
+        <a href="predictions.html">Predictions</a>
+        <a href="history.html">History</a>
+        <a href="accuracy.html">Accuracy</a>
+    </nav>
+
+</header>
+
+
+<main class="container">
+
+    <section class="hero">
+        <p class="section-tag">DATA ANALYSIS</p>
+
+        <h1>Understand the Data.</h1>
+
+        <p>
+            Explore patterns, frequencies and statistical insights
+            from the available dataset.
+        </p>
+    </section>
+
+
+    <!-- Statistics -->
+
+    <section class="stats-grid">
+
+        <div class="stat-card">
+            <span>Total Data</span>
+            <strong id="totalData">—</strong>
+        </div>
+
+        <div class="stat-card">
+            <span>Average</span>
+            <strong id="average">—</strong>
+        </div>
+
+        <div class="stat-card">
+            <span>Most Frequent</span>
+            <strong id="mostCommon">—</strong>
+        </div>
+
+        <div class="stat-card">
+            <span>Range</span>
+            <strong id="range">—</strong>
+        </div>
+
+    </section>
+
+
+    <!-- Frequency -->
+
+    <section class="section">
+
+        <div class="section-heading">
+            <p class="section-tag">FREQUENCY</p>
+            <h2>Value Distribution</h2>
+        </div>
+
+        <div id="frequencyList" class="analysis-list">
+            Loading data...
+        </div>
+
+    </section>
+
+
+    <!-- Recent Data -->
+
+    <section class="section">
+
+        <div class="section-heading">
+            <p class="section-tag">RECENT DATA</p>
+            <h2>Latest Results</h2>
+        </div>
+
+        <div id="recentResults" class="recent-results">
+            Loading...
+        </div>
+
+    </section>
+
+</main>
+
+
+<footer class="footer">
+    <p>© 2026 PredictIQ — Analyze • Predict • Measure</p>
+</footer>
+
+
+<script src="../analysis.js"></script>
+
+</body>
+      </html>
