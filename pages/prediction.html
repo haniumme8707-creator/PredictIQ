@@ -1,1 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <title>Prediction | PredictIQ</title>
+
+  <link rel="stylesheet" href="../style.css">
+</head>
+
+<body>
+
+  <header class="navbar">
+    <div class="logo">PredictIQ</div>
+
+    <button id="menuBtn" class="menu-btn">☰</button>
+
+    <nav>
+      <a href="../index.html">Dashboard</a>
+      <a href="analysis.html">Analysis</a>
+      <a href="prediction.html" class="active">Prediction</a>
+      <a href="history.html">History</a>
+      <a href="accuracy.html">Accuracy</a>
+    </nav>
+  </header>
+
+
+  <main class="prediction-page">
+
+    <section class="page-header">
+      <p class="eyebrow">STATISTICAL FORECAST</p>
+      <h1>Next Prediction</h1>
+      <p>
+        A data-based forecast generated from historical results.
+      </p>
+    </section>
+
+
+    <section class="prediction-card">
+
+      <div class="prediction-label">
+        NEXT NUMBER
+      </div>
+
+      <div id="predictionValue" class="prediction-number">
+        —
+      </div>
+
+      <div class="confidence-box">
+        <span>Confidence</span>
+        <strong id="confidenceValue">—</strong>
+      </div>
+
+    </section>
+
+
+    <section class="recent-section">
+
+      <h2>Recent Results</h2>
+
+      <div id="recentResults" class="recent-results">
+        Loading...
+      </div>
+
+    </section>
+
+
+    <section class="method-card">
+
+      <h2>How this prediction works</h2>
+
+      <p>
+        PredictIQ analyses historical results using frequency,
+        recent-result weighting and simple sequence patterns.
+      </p>
+
+      <div class="signals">
+
+        <div class="signal">
+          <strong>40%</strong>
+          <span>Frequency</span>
+        </div>
+
+        <div class="signal">
+          <strong>35%</strong>
+          <span>Recency</span>
+        </div>
+
+        <div class="signal">
+          <strong>25%</strong>
+          <span>Pattern</span>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <p class="disclaimer">
+      ⚠️ This is a statistical analysis tool, not a guaranteed
+      prediction. Chance-based game outcomes cannot be reliably
+      predicted.
+    </p>
+
+  </main>
+
+
+  <script src="../prediction.js"></script>
+
+</body>
+            </html>
