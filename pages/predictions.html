@@ -19,7 +19,7 @@
     <nav>
       <a href="../index.html">Dashboard</a>
       <a href="analysis.html">Analysis</a>
-      <a href="prediction.html" class="active">Prediction</a>
+      <a href="predictions.html" class="active">Prediction</a>
       <a href="history.html">History</a>
       <a href="accuracy.html">Accuracy</a>
     </nav>
@@ -51,6 +51,11 @@
         <span>Confidence</span>
         <strong id="confidenceValue">—</strong>
       </div>
+      <div class="prediction-actions">
+  <button id="savePredictionBtn">Save Prediction</button>
+</div>
+
+<p id="saveStatus" class="save-status"></p>
 
     </section>
 
@@ -62,8 +67,36 @@
       <div id="recentResults" class="recent-results">
         Loading...
       </div>
+      
+   </section>
+    
+      <section class="result-entry">
 
-    </section>
+  <h2>Record Actual Result</h2>
+
+  <p>
+    Enter the actual result after the round to track prediction accuracy.
+  </p>
+
+  <div class="result-input-row">
+    <input
+      type="number"
+      id="actualResult"
+      min="0"
+      max="9"
+      placeholder="0–9"
+    >
+
+    <button id="checkResultBtn">
+      Check Result
+    </button>
+  </div>
+
+  <p id="resultStatus"></p>
+
+      </section>
+
+  
 
 
     <section class="method-card">
