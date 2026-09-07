@@ -1,1 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
 
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Accuracy | PredictIQ</title>
+
+  <link rel="stylesheet" href="../style.css">
+</head>
+
+<body>
+
+  <header class="navbar">
+
+    <div class="logo">PredictIQ</div>
+
+    <button id="menuBtn" class="menu-btn">☰</button>
+
+    <nav>
+      <a href="../index.html">Dashboard</a>
+      <a href="analysis.html">Analysis</a>
+      <a href="predictions.html">Predictions</a>
+      <a href="history.html">History</a>
+      <a href="accuracy.html" class="active">Accuracy</a>
+    </nav>
+
+  </header>
+
+
+  <main class="accuracy-page">
+
+    <section class="page-header">
+
+      <p class="eyebrow">PERFORMANCE ANALYSIS</p>
+
+      <h1>Prediction Accuracy</h1>
+
+      <p>
+        Track prediction performance based on recorded actual results.
+      </p>
+
+    </section>
+
+
+    <section class="accuracy-card">
+
+      <div class="accuracy-number" id="accuracyValue">
+        —
+      </div>
+
+      <p>Overall Accuracy</p>
+
+    </section>
+
+
+    <section class="accuracy-stats">
+
+      <div class="stat-card">
+        <strong id="totalChecked">0</strong>
+        <span>Checked</span>
+      </div>
+
+      <div class="stat-card">
+        <strong id="correctCount">0</strong>
+        <span>Correct</span>
+      </div>
+
+      <div class="stat-card">
+        <strong id="incorrectCount">0</strong>
+        <span>Incorrect</span>
+      </div>
+
+    </section>
+
+
+    <p class="accuracy-message" id="accuracyMessage">
+      No completed predictions yet.
+    </p>
+
+
+    <p class="disclaimer">
+      ⚠️ Accuracy is calculated only from recorded results.
+      It does not guarantee future outcomes.
+    </p>
+
+  </main>
+
+
+  <script src="../accuracy.js"></script>
+
+</body>
+
+                                 </html>
