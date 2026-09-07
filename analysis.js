@@ -1,280 +1,297 @@
 let results = [];
 
+// ===============================
+// LOAD HISTORICAL DATA
+// ===============================
+async function loadResults() {
+  try {
+    const response = await fetch("data/results.json");
 
-// Load data
-async function loadAnalysis() {
-
-    try {
-
-        const response =
-            await fetch("../data/results.json");
-
-        if (!response.ok) {
-            throw new Error("Data load failed");
-        }
-
-        results = await response.json();
-
-        showStatistics();
-        showFrequency();
-        showRecentResults();
-
-    } catch (error) {
-
-        console.error("Analysis error:", error);
-
-        const list =
-            document.getElementById("frequencyList");
-
-        if (list) {
-            list.textContent =
-                "Unable to load data.";
-        }
-
+    if (!response.ok) {
+      throw new Error("Unable to load results");
     }
 
+    results = await response.json();
+
+    if (!Array.isArray(results) || results.length < 5) {
+      throw new Error("Not enough historical data");
+    }
+
+    updateDashboard();
+    generatePrediction();
+
+  } catch (error) {
+    console.error("PredictionIQ Error:", error);
+  }
 }
 
 
-// Statistics
-function showStatistics() {
+// ===============================
+// BASIC STATISTICS
+// ===============================
+function calculateStats(data) {
+  const frequency = {};
 
-    if (!results.length) return;
+  data.forEach(value => {
+    frequency[value] = (frequency[value] || 0) + 1;
+  });
 
+  let mostFrequent = null;
+  let highestFrequency = 0;
 
-    const total =
-        results.length;
+  Object.entries(frequency).forEach(([value, count]) => {
+    if (count > highestFrequency) {
+      highestFrequency = count;
+      mostFrequent = Number(value);
+    }
+  });
 
+  const sum = data.reduce((total, value) => total + Number(value), 0);
+  const average = sum / data.length;
 
-    const sum =
-        results.reduce(
-            (a, b) => a + Number(b),
-            0
-        );
-
-
-    const average =
-        sum / total;
-
-
-    const minimum =
-        Math.min(...results);
-
-
-    const maximum =
-        Math.max(...results);
-
-
-    const frequency = {};
-
-
-    results.forEach(value => {
-
-        frequency[value] =
-            (frequency[value] || 0) + 1;
-
-    });
+  return {
+    frequency,
+    mostFrequent,
+    highestFrequency,
+    average
+  };
+}
 
 
-    let mostCommon =
-        results[0];
+// ===============================
+// PREDICTION ENGINE
+// ===============================
+function predictNext(data) {
+
+  const candidates = {};
+
+  // Possible values 0–9
+  for (let i = 0; i <= 9; i++) {
+    candidates[i] = {
+      frequency: 0,
+      recency: 0,
+      pattern: 0,
+      score: 0
+    };
+  }
+
+  // --------------------------------
+  // 1. FREQUENCY SIGNAL
+  // --------------------------------
+  const frequency = {};
+
+  data.forEach(value => {
+    frequency[value] = (frequency[value] || 0) + 1;
+  });
+
+  const maxFrequency = Math.max(
+    ...Object.values(frequency)
+  );
+
+  for (let i = 0; i <= 9; i++) {
+    candidates[i].frequency =
+      maxFrequency > 0
+        ? (frequency[i] || 0) / maxFrequency
+        : 0;
+  }
 
 
-    Object.keys(frequency).forEach(value => {
+  // --------------------------------
+  // 2. RECENCY SIGNAL
+  // --------------------------------
+  const recentCount = Math.min(10, data.length);
+  const recent = data.slice(-recentCount);
 
-        if (
-            frequency[value] >
-            frequency[mostCommon]
-        ) {
+  recent.forEach((value, index) => {
 
-            mostCommon =
-                Number(value);
+    // Later results get higher weight
+    const weight = (index + 1) / recentCount;
 
+    candidates[value].recency += weight;
+  });
+
+  const maxRecency = Math.max(
+    ...Object.values(candidates).map(c => c.recency)
+  );
+
+  if (maxRecency > 0) {
+    for (let i = 0; i <= 9; i++) {
+      candidates[i].recency /= maxRecency;
+    }
+  }
+
+
+  // --------------------------------
+  // 3. SIMPLE SEQUENCE SIGNAL
+  // --------------------------------
+  if (data.length >= 4) {
+
+    const lastValue = data[data.length - 1];
+
+    // Find historical occurrences of the
+    // same last value and see what followed it.
+    for (let i = 0; i < data.length - 1; i++) {
+
+      if (data[i] === lastValue) {
+
+        const nextValue = data[i + 1];
+
+        if (candidates[nextValue]) {
+          candidates[nextValue].pattern += 1;
         }
+      }
+    }
+  }
 
-    });
+  const maxPattern = Math.max(
+    ...Object.values(candidates).map(c => c.pattern)
+  );
 
-
-    document.getElementById("totalData")
-        .textContent = total;
-
-
-    document.getElementById("average")
-        .textContent =
-        average.toFixed(2);
-
-
-    document.getElementById("mostCommon")
-        .textContent =
-        mostCommon;
+  if (maxPattern > 0) {
+    for (let i = 0; i <= 9; i++) {
+      candidates[i].pattern /= maxPattern;
+    }
+  }
 
 
-    document.getElementById("range")
-        .textContent =
-        minimum + " – " + maximum;
+  // --------------------------------
+  // 4. COMBINED SCORE
+  // --------------------------------
+  for (let i = 0; i <= 9; i++) {
 
+    candidates[i].score =
+      (candidates[i].frequency * 0.40) +
+      (candidates[i].recency * 0.35) +
+      (candidates[i].pattern * 0.25);
+  }
+
+
+  // --------------------------------
+  // FIND BEST CANDIDATE
+  // --------------------------------
+  let prediction = 0;
+  let bestScore = -Infinity;
+
+  for (let i = 0; i <= 9; i++) {
+
+    if (candidates[i].score > bestScore) {
+      bestScore = candidates[i].score;
+      prediction = i;
+    }
+  }
+
+
+  // --------------------------------
+  // CONFIDENCE
+  // --------------------------------
+  const totalScore = Object.values(candidates)
+    .reduce((sum, candidate) => sum + candidate.score, 0);
+
+  const confidence =
+    totalScore > 0
+      ? (bestScore / totalScore) * 100
+      : 0;
+
+
+  return {
+    prediction,
+    confidence,
+    candidates
+  };
 }
 
 
-// Frequency chart + list
-function showFrequency() {
+// ===============================
+// GENERATE CURRENT PREDICTION
+// ===============================
+function generatePrediction() {
 
-    const container =
-        document.getElementById("frequencyList");
+  if (!results.length) return;
 
+  const predictionData = predictNext(results);
 
-    if (!container) return;
+  const predictionElement =
+    document.getElementById("predictionValue");
 
+  const confidenceElement =
+    document.getElementById("confidenceValue");
 
-    const frequency = {};
+  if (predictionElement) {
+    predictionElement.textContent =
+      predictionData.prediction;
+  }
 
+  if (confidenceElement) {
+    confidenceElement.textContent =
+      predictionData.confidence.toFixed(1) + "%";
+  }
 
-    results.forEach(value => {
+  console.log(
+    "Prediction:",
+    predictionData.prediction
+  );
 
-        frequency[value] =
-            (frequency[value] || 0) + 1;
-
-    });
-
-
-    const sorted =
-        Object.entries(frequency)
-            .sort(
-                (a, b) =>
-                    Number(a[0]) -
-                    Number(b[0])
-            );
-
-
-    container.innerHTML = "";
-
-
-    sorted.forEach(([value, count]) => {
-
-        const percentage =
-            (count / results.length) * 100;
-
-
-        const item =
-            document.createElement("div");
-
-
-        item.className =
-            "analysis-item";
-
-
-        item.innerHTML = `
-
-            <div class="analysis-info">
-
-                <div class="analysis-title">
-                    Value ${value}
-                </div>
-
-                <div class="analysis-count">
-                    ${count} occurrences
-                </div>
-
-            </div>
-
-
-            <div class="bar-area">
-
-                <div
-                    class="bar-fill"
-                    style="width:${percentage}%"
-                ></div>
-
-            </div>
-
-
-            <div class="analysis-percent">
-                ${percentage.toFixed(1)}%
-            </div>
-
-        `;
-
-
-        container.appendChild(item);
-
-    });
-
+  console.log(
+    "Confidence:",
+    predictionData.confidence.toFixed(1) + "%"
+  );
 }
 
 
-// Recent results
-function showRecentResults() {
+// ===============================
+// UPDATE DASHBOARD
+// ===============================
+function updateDashboard() {
 
-    const container =
-        document.getElementById("recentResults");
+  const stats = calculateStats(results);
 
+  const dataCount =
+    document.getElementById("dataCount");
 
-    if (!container) return;
+  const averageValue =
+    document.getElementById("averageValue");
 
+  const frequentValue =
+    document.getElementById("frequentValue");
 
-    const recent =
-        results
-            .slice(-10)
-            .reverse();
+  if (dataCount) {
+    dataCount.textContent = results.length;
+  }
 
+  if (averageValue) {
+    averageValue.textContent =
+      stats.average.toFixed(2);
+  }
 
-    container.innerHTML = "";
-
-
-    recent.forEach((value, index) => {
-
-        const item =
-            document.createElement("div");
-
-
-        item.className =
-            "recent-item";
-
-
-        item.innerHTML = `
-
-            <span>
-                #${index + 1}
-            </span>
-
-            <strong>
-                ${value}
-            </strong>
-
-        `;
-
-
-        container.appendChild(item);
-
-    });
-
+  if (frequentValue) {
+    frequentValue.textContent =
+      stats.mostFrequent;
+  }
 }
 
 
-// Mobile menu
+// ===============================
+// MOBILE MENU
+// ===============================
 const menuButton =
-    document.getElementById("menuBtn");
-
+  document.getElementById("menuBtn");
 
 const navigation =
-    document.querySelector(".navbar nav");
-
+  document.querySelector(".navbar nav");
 
 if (menuButton && navigation) {
 
-    menuButton.addEventListener(
-        "click",
-        () => {
+  menuButton.addEventListener("click", () => {
 
-            navigation.classList.toggle(
-                "mobile-open"
-            );
-
-        }
+    navigation.classList.toggle(
+      "mobile-open"
     );
 
+  });
 }
 
 
-// Start
-loadAnalysis();
+// ===============================
+// START
+// ===============================
+loadResults();
