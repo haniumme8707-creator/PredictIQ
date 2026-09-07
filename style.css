@@ -452,3 +452,101 @@ footer {
     }
 
 }
+/* =========================
+   ANALYSIS CHART
+========================= */
+
+.analysis-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 20px;
+}
+
+.analysis-item {
+    display: grid;
+    grid-template-columns: 110px 1fr 55px;
+    align-items: center;
+    gap: 14px;
+
+    padding: 14px 16px;
+
+    border: 1px solid var(--border);
+    border-radius: 14px;
+
+    background: var(--card);
+}
+
+.analysis-info {
+    min-width: 0;
+}
+
+.analysis-title {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.analysis-count {
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 4px;
+}
+
+.bar-area {
+    height: 10px;
+
+    background: rgba(255,255,255,0.06);
+
+    border-radius: 20px;
+
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+
+    background: linear-gradient(
+        90deg,
+        #7c6cff,
+        #a78bfa
+    );
+
+    border-radius: 20px;
+
+    min-width: 4px;
+
+    transition: width 0.6s ease;
+}
+
+.analysis-percent {
+    text-align: right;
+
+    font-size: 13px;
+
+    color: var(--accent-2);
+
+    font-weight: 600;
+}
+
+
+@media (max-width: 600px) {
+
+    .analysis-item {
+        grid-template-columns: 90px 1fr 50px;
+        gap: 10px;
+        padding: 13px;
+    }
+
+    .analysis-title {
+        font-size: 12px;
+    }
+
+    .analysis-count {
+        font-size: 10px;
+    }
+
+    .analysis-percent {
+        font-size: 11px;
+    }
+
+    }
