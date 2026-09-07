@@ -1,4 +1,5 @@
 let results = [];
+let currentPrediction = null;
 
 // ===============================
 // LOAD RESULTS
@@ -247,7 +248,9 @@ function showPrediction() {
 
   const predictionData =
     predictNext(results);
-
+  
+  currentPrediction =
+    predictionData.prediction;
 
   const predictionElement =
     document.getElementById(
@@ -349,7 +352,54 @@ if (menuButton && navigation) {
   );
 
 }
+// ===============================
+// SAVE PREDICTION
+// ===============================
 
+function savePrediction() {
+
+  if (currentPrediction === null) return;
+
+  const history = JSON.parse(
+    localStorage.getItem("predictIQ_history") || "[]"
+  );
+
+  history.push({
+    id: Date.now(),
+    prediction: currentPrediction,
+    actual: null,
+    status: "Pending",
+    timestamp: new Date().toISOString()
+  });
+
+  localStorage.setItem(
+    "predictIQ_history",
+    JSON.stringify(history)
+  );
+
+  const status = document.getElementById("saveStatus");
+
+  if (status) {
+    status.textContent = "Prediction saved successfully.";
+  }
+}
+
+
+// ===============================
+// SAVE BUTTON
+// ===============================
+
+const savePredictionBtn =
+  document.getElementById("savePredictionBtn");
+
+if (savePredictionBtn) {
+
+  savePredictionBtn.addEventListener(
+    "click",
+    savePrediction
+  );
+
+} 
 
 // ===============================
 // START
