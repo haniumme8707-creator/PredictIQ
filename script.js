@@ -152,20 +152,27 @@ function updateDashboard() {
 
 
 // Mobile menu
-const menuToggle =
-    document.querySelector(".menu-toggle");
+const menuButton = document.getElementById("menuBtn");
+const navigation = document.querySelector(".navbar nav");
 
-const navLinks =
-    document.querySelector(".nav-links");
+if (menuButton && navigation) {
 
-if (menuToggle && navLinks) {
+    menuButton.addEventListener("click", () => {
 
-    menuToggle.addEventListener("click", () => {
-        navLinks.classList.toggle("active");
+        navigation.classList.toggle("mobile-open");
+
+    });
+
+}// Mobile menu
+const menuButton = document.getElementById("menuBtn");
+const navigation = document.querySelector(".navbar nav");
+
+if (menuButton && navigation) {
+
+    menuButton.addEventListener("click", () => {
+
+        navigation.classList.toggle("mobile-open");
+
     });
 
 }
-
-
-// Start application
-loadResults();
