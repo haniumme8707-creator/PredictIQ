@@ -406,3 +406,91 @@ if (savePredictionBtn) {
 // ===============================
 
 loadPredictionData();
+// ===============================
+// CHECK ACTUAL RESULT
+// ===============================
+
+function checkActualResult() {
+
+  const input =
+    document.getElementById("actualResult");
+
+  const status =
+    document.getElementById("resultStatus");
+
+  if (!input || input.value === "") {
+    if (status) {
+      status.textContent = "Please enter the actual result.";
+    }
+    return;
+  }
+
+  const actual = Number(input.value);
+
+  if (actual < 0 || actual > 9) {
+    if (status) {
+      status.textContent = "Enter a number between 0 and 9.";
+    }
+    return;
+  }
+
+  const history = JSON.parse(
+    localStorage.getItem("predictIQ_history") || "[]"
+  );
+
+  if (history.length === 0) {
+    if (status) {
+      status.textContent = "No saved prediction found.";
+    }
+    return;
+  }
+
+  // Find latest pending prediction
+  let latest = null;
+
+  for (let i = history.length - 1; i >= 0; i--) {
+    if (history[i].status === "Pending") {
+      latest = history[i];
+      break;
+    }
+  }
+
+  if (!latest) {
+    if (status) {
+      status.textContent = "No pending prediction found.";
+    }
+    return;
+  }
+
+  latest.actual = actual;
+
+  if (latest.prediction === actual) {
+    latest.status = "Correct";
+    status.textContent = "✓ Prediction was correct!";
+  } else {
+    latest.status = "Incorrect";
+    status.textContent = "✕ Prediction was incorrect.";
+  }
+
+  localStorage.setItem(
+    "predictIQ_history",
+    JSON.stringify(history)
+  );
+}
+
+
+// ===============================
+// CHECK RESULT BUTTON
+// ===============================
+
+const checkResultBtn =
+  document.getElementById("checkResultBtn");
+
+if (checkResultBtn) {
+
+  checkResultBtn.addEventListener(
+    "click",
+    checkActualResult
+  );
+
+}
