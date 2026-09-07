@@ -402,11 +402,6 @@ if (savePredictionBtn) {
 } 
 
 // ===============================
-// START
-// ===============================
-
-loadPredictionData();
-// ===============================
 // CHECK ACTUAL RESULT
 // ===============================
 
@@ -494,3 +489,85 @@ if (checkResultBtn) {
   );
 
 }
+// ===============================
+// ANALYSE USER RESULTS
+// ===============================
+
+function analyseUserResults() {
+
+  const input =
+    document.getElementById("resultsInput");
+
+  const status =
+    document.getElementById("inputStatus");
+
+  if (!input) return;
+
+  const values = input.value
+    .split(",")
+    .map(value => value.trim())
+    .filter(value => value !== "")
+    .map(Number);
+
+  if (values.length < 5) {
+
+    if (status) {
+      status.textContent =
+        "Please enter at least 5 results.";
+    }
+
+    return;
+  }
+
+  if (
+    values.some(
+      value =>
+        !Number.isInteger(value) ||
+        value < 0 ||
+        value > 9
+    )
+  ) {
+
+    if (status) {
+      status.textContent =
+        "Use numbers from 0 to 9 only.";
+    }
+
+    return;
+  }
+
+  results = values;
+
+  showPrediction();
+  showRecentResults();
+
+  if (status) {
+    status.textContent =
+      "Results analysed successfully.";
+  }
+
+}
+
+
+// ===============================
+// ANALYSE BUTTON
+// ===============================
+
+const analyseBtn =
+  document.getElementById("analyseBtn");
+
+if (analyseBtn) {
+
+  analyseBtn.addEventListener(
+    "click",
+    analyseUserResults
+  );
+
+}
+
+
+// ===============================
+// START
+// ===============================
+
+loadPredictionData();
