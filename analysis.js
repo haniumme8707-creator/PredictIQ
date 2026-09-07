@@ -1,11 +1,13 @@
 let results = [];
-let frequencyChart = null;
 
 
 // Load data
 async function loadAnalysis() {
+
     try {
-        const response = await fetch("../data/results.json");
+
+        const response =
+            await fetch("../data/results.json");
 
         if (!response.ok) {
             throw new Error("Data load failed");
@@ -16,17 +18,21 @@ async function loadAnalysis() {
         showStatistics();
         showFrequency();
         showRecentResults();
-        createChart();
 
     } catch (error) {
+
         console.error("Analysis error:", error);
 
-        const list = document.getElementById("frequencyList");
+        const list =
+            document.getElementById("frequencyList");
 
         if (list) {
-            list.textContent = "Unable to load data.";
+            list.textContent =
+                "Unable to load data.";
         }
+
     }
+
 }
 
 
@@ -35,26 +41,44 @@ function showStatistics() {
 
     if (!results.length) return;
 
-    const total = results.length;
 
-    const sum = results.reduce(
-        (a, b) => a + Number(b),
-        0
-    );
+    const total =
+        results.length;
 
-    const average = sum / total;
 
-    const minimum = Math.min(...results);
-    const maximum = Math.max(...results);
+    const sum =
+        results.reduce(
+            (a, b) => a + Number(b),
+            0
+        );
+
+
+    const average =
+        sum / total;
+
+
+    const minimum =
+        Math.min(...results);
+
+
+    const maximum =
+        Math.max(...results);
+
 
     const frequency = {};
 
+
     results.forEach(value => {
+
         frequency[value] =
             (frequency[value] || 0) + 1;
+
     });
 
-    let mostCommon = results[0];
+
+    let mostCommon =
+        results[0];
+
 
     Object.keys(frequency).forEach(value => {
 
@@ -62,45 +86,64 @@ function showStatistics() {
             frequency[value] >
             frequency[mostCommon]
         ) {
-            mostCommon = Number(value);
+
+            mostCommon =
+                Number(value);
+
         }
 
     });
 
 
-    document.getElementById("totalData").textContent =
-        total;
+    document.getElementById("totalData")
+        .textContent = total;
 
-    document.getElementById("average").textContent =
+
+    document.getElementById("average")
+        .textContent =
         average.toFixed(2);
 
-    document.getElementById("mostCommon").textContent =
+
+    document.getElementById("mostCommon")
+        .textContent =
         mostCommon;
 
-    document.getElementById("range").textContent =
+
+    document.getElementById("range")
+        .textContent =
         minimum + " – " + maximum;
+
 }
 
 
-// Frequency list
+// Frequency chart + list
 function showFrequency() {
 
     const container =
         document.getElementById("frequencyList");
 
+
     if (!container) return;
+
 
     const frequency = {};
 
+
     results.forEach(value => {
+
         frequency[value] =
             (frequency[value] || 0) + 1;
+
     });
 
 
     const sorted =
         Object.entries(frequency)
-            .sort((a, b) => Number(a[0]) - Number(b[0]));
+            .sort(
+                (a, b) =>
+                    Number(a[0]) -
+                    Number(b[0])
+            );
 
 
     container.innerHTML = "";
@@ -115,87 +158,46 @@ function showFrequency() {
         const item =
             document.createElement("div");
 
-        item.className = "analysis-item";
+
+        item.className =
+            "analysis-item";
+
 
         item.innerHTML = `
-            <div>
-                <strong>Value ${value}</strong>
-                <span>${count} occurrences</span>
+
+            <div class="analysis-info">
+
+                <div class="analysis-title">
+                    Value ${value}
+                </div>
+
+                <div class="analysis-count">
+                    ${count} occurrences
+                </div>
+
             </div>
+
+
+            <div class="bar-area">
+
+                <div
+                    class="bar-fill"
+                    style="width:${percentage}%"
+                ></div>
+
+            </div>
+
 
             <div class="analysis-percent">
                 ${percentage.toFixed(1)}%
             </div>
+
         `;
+
 
         container.appendChild(item);
 
     });
-
-}
-
-
-// Chart
-function createChart() {
-
-    const canvas =
-        document.getElementById("frequencyChart");
-
-    if (!canvas || typeof Chart === "undefined") {
-        return;
-    }
-
-
-    const frequency = {};
-
-    results.forEach(value => {
-        frequency[value] =
-            (frequency[value] || 0) + 1;
-    });
-
-
-    const labels =
-        Object.keys(frequency)
-            .sort((a, b) => Number(a) - Number(b));
-
-    const values =
-        labels.map(value => frequency[value]);
-
-
-    frequencyChart =
-        new Chart(canvas, {
-
-            type: "bar",
-
-            data: {
-                labels: labels,
-
-                datasets: [{
-                    label: "Occurrences",
-                    data: values
-                }]
-            },
-
-            options: {
-                responsive: true,
-
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                }
-            }
-
-        });
 
 }
 
@@ -206,10 +208,15 @@ function showRecentResults() {
     const container =
         document.getElementById("recentResults");
 
+
     if (!container) return;
 
+
     const recent =
-        results.slice(-10).reverse();
+        results
+            .slice(-10)
+            .reverse();
+
 
     container.innerHTML = "";
 
@@ -219,12 +226,23 @@ function showRecentResults() {
         const item =
             document.createElement("div");
 
-        item.className = "recent-item";
+
+        item.className =
+            "recent-item";
+
 
         item.innerHTML = `
-            <span>#${index + 1}</span>
-            <strong>${value}</strong>
+
+            <span>
+                #${index + 1}
+            </span>
+
+            <strong>
+                ${value}
+            </strong>
+
         `;
+
 
         container.appendChild(item);
 
@@ -233,9 +251,10 @@ function showRecentResults() {
 }
 
 
-// Hamburger menu
+// Mobile menu
 const menuButton =
     document.getElementById("menuBtn");
+
 
 const navigation =
     document.querySelector(".navbar nav");
@@ -243,11 +262,16 @@ const navigation =
 
 if (menuButton && navigation) {
 
-    menuButton.addEventListener("click", () => {
+    menuButton.addEventListener(
+        "click",
+        () => {
 
-        navigation.classList.toggle("mobile-open");
+            navigation.classList.toggle(
+                "mobile-open"
+            );
 
-    });
+        }
+    );
 
 }
 
