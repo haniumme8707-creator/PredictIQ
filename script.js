@@ -1,178 +1,289 @@
 let results = [];
 
+// ===============================
+// LOAD HISTORICAL DATA
+// ===============================
 async function loadResults() {
-    try {
-        const response = await fetch("data/results.json");
+try {
+const response = await fetch("data/results.json");
 
-        if (!response.ok) {
-            throw new Error("Data load nahi hua");
-        }
+if (!response.ok) {  
+  throw new Error("Unable to load results");  
+}  
 
-        results = await response.json();
+results = await response.json();  
 
-        updateDashboard();
+if (!Array.isArray(results) || results.length < 5) {  
+  throw new Error("Not enough historical data");  
+}  
 
-    } catch (error) {
-        console.error("Error:", error);
+updateDashboard();  
+generatePrediction();
 
-        const dataCount = document.getElementById("dataCount");
-
-        if (dataCount) {
-            dataCount.textContent = "Error";
-        }
-    }
+} catch (error) {
+console.error("PredictionIQ Error:", error);
+}
 }
 
-
-// Calculate basic statistics
+// ===============================
+// BASIC STATISTICS
+// ===============================
 function calculateStats(data) {
+const frequency = {};
 
-    if (!data.length) {
-        return {
-            mostCommon: "-",
-            frequency: 0,
-            average: 0,
-            total: 0
-        };
-    }
+data.forEach(value => {
+frequency[value] = (frequency[value] || 0) + 1;
+});
 
-    const frequency = {};
+let mostFrequent = null;
+let highestFrequency = 0;
 
-    data.forEach(value => {
-        frequency[value] = (frequency[value] || 0) + 1;
-    });
+Object.entries(frequency).forEach(([value, count]) => {
+if (count > highestFrequency) {
+highestFrequency = count;
+mostFrequent = Number(value);
+}
+});
 
-    let mostCommon = data[0];
-    let highestFrequency = frequency[data[0]];
+const sum = data.reduce((total, value) => total + Number(value), 0);
+const average = sum / data.length;
 
-    Object.keys(frequency).forEach(value => {
-
-        if (frequency[value] > highestFrequency) {
-            mostCommon = Number(value);
-            highestFrequency = frequency[value];
-        }
-
-    });
-
-    const total = data.length;
-
-    const average =
-        data.reduce((sum, value) => sum + value, 0) / total;
-
-    return {
-        mostCommon,
-        frequency: highestFrequency,
-        average,
-        total
-    };
+return {
+frequency,
+mostFrequent,
+highestFrequency,
+average
+};
 }
 
+// ===============================
+// PREDICTION ENGINE
+// ===============================
+function predictNext(data) {
 
-// Generate demo prediction
-function generatePrediction(data) {
+const candidates = {};
 
-    const stats = calculateStats(data);
-
-    if (!data.length) {
-        return {
-            value: "-",
-            confidence: 0
-        };
-    }
-
-    const confidence =
-        (stats.frequency / stats.total) * 100;
-
-    return {
-        value: stats.mostCommon,
-        confidence: confidence
-    };
+// Possible values 0–9
+for (let i = 0; i <= 9; i++) {
+candidates[i] = {
+frequency: 0,
+recency: 0,
+pattern: 0,
+score: 0
+};
 }
 
+// --------------------------------
+// 1. FREQUENCY SIGNAL
+// --------------------------------
+const frequency = {};
 
-// Update dashboard
+data.forEach(value => {
+frequency[value] = (frequency[value] || 0) + 1;
+});
+
+const maxFrequency = Math.max(
+...Object.values(frequency)
+);
+
+for (let i = 0; i <= 9; i++) {
+candidates[i].frequency =
+maxFrequency > 0
+? (frequency[i] || 0) / maxFrequency
+: 0;
+}
+
+// --------------------------------
+// 2. RECENCY SIGNAL
+// --------------------------------
+const recentCount = Math.min(10, data.length);
+const recent = data.slice(-recentCount);
+
+recent.forEach((value, index) => {
+
+// Later results get higher weight  
+const weight = (index + 1) / recentCount;  
+
+candidates[value].recency += weight;
+
+});
+
+const maxRecency = Math.max(
+...Object.values(candidates).map(c => c.recency)
+);
+
+if (maxRecency > 0) {
+for (let i = 0; i <= 9; i++) {
+candidates[i].recency /= maxRecency;
+}
+}
+
+// --------------------------------
+// 3. SIMPLE SEQUENCE SIGNAL
+// --------------------------------
+if (data.length >= 4) {
+
+const lastValue = data[data.length - 1];  
+
+// Find historical occurrences of the  
+// same last value and see what followed it.  
+for (let i = 0; i < data.length - 1; i++) {  
+
+  if (data[i] === lastValue) {  
+
+    const nextValue = data[i + 1];  
+
+    if (candidates[nextValue]) {  
+      candidates[nextValue].pattern += 1;  
+    }  
+  }  
+}
+
+}
+
+const maxPattern = Math.max(
+...Object.values(candidates).map(c => c.pattern)
+);
+
+if (maxPattern > 0) {
+for (let i = 0; i <= 9; i++) {
+candidates[i].pattern /= maxPattern;
+}
+}
+
+// --------------------------------
+// 4. COMBINED SCORE
+// --------------------------------
+for (let i = 0; i <= 9; i++) {
+
+candidates[i].score =  
+  (candidates[i].frequency * 0.40) +  
+  (candidates[i].recency * 0.35) +  
+  (candidates[i].pattern * 0.25);
+
+}
+
+// --------------------------------
+// FIND BEST CANDIDATE
+// --------------------------------
+let prediction = 0;
+let bestScore = -Infinity;
+
+for (let i = 0; i <= 9; i++) {
+
+if (candidates[i].score > bestScore) {  
+  bestScore = candidates[i].score;  
+  prediction = i;  
+}
+
+}
+
+// --------------------------------
+// CONFIDENCE
+// --------------------------------
+const totalScore = Object.values(candidates)
+.reduce((sum, candidate) => sum + candidate.score, 0);
+
+const confidence =
+totalScore > 0
+? (bestScore / totalScore) * 100
+: 0;
+
+return {
+prediction,
+confidence,
+candidates
+};
+}
+
+// ===============================
+// GENERATE CURRENT PREDICTION
+// ===============================
+function generatePrediction() {
+
+if (!results.length) return;
+
+const predictionData = predictNext(results);
+
+const predictionElement =
+document.getElementById("predictionValue");
+
+const confidenceElement =
+document.getElementById("confidenceValue");
+
+if (predictionElement) {
+predictionElement.textContent =
+predictionData.prediction;
+}
+
+if (confidenceElement) {
+confidenceElement.textContent =
+predictionData.confidence.toFixed(1) + "%";
+}
+
+console.log(
+"Prediction:",
+predictionData.prediction
+);
+
+console.log(
+"Confidence:",
+predictionData.confidence.toFixed(1) + "%"
+);
+}
+
+// ===============================
+// UPDATE DASHBOARD
+// ===============================
 function updateDashboard() {
 
-    const prediction = generatePrediction(results);
-    const stats = calculateStats(results);
+const stats = calculateStats(results);
 
-    const predictionValue =
-        document.getElementById("predictionValue");
+const dataCount =
+document.getElementById("dataCount");
 
-    const confidence =
-        document.getElementById("confidence");
+const averageValue =
+document.getElementById("averageValue");
 
-    const dataCount =
-        document.getElementById("dataCount");
+const frequentValue =
+document.getElementById("frequentValue");
 
-    const accuracy =
-        document.getElementById("accuracy");
-
-    const totalPredictions =
-        document.getElementById("totalPredictions");
-
-    const correctPredictions =
-        document.getElementById("correctPredictions");
-
-    const wrongPredictions =
-        document.getElementById("wrongPredictions");
-
-
-    if (predictionValue) {
-        predictionValue.textContent = prediction.value;
-    }
-
-    if (confidence) {
-        confidence.textContent =
-            prediction.confidence.toFixed(1) + "%";
-    }
-
-    if (dataCount) {
-        dataCount.textContent = stats.total;
-    }
-
-
-    // Demo values for now
-    if (accuracy) {
-        accuracy.textContent = "—";
-    }
-
-    if (totalPredictions) {
-        totalPredictions.textContent = "0";
-    }
-
-    if (correctPredictions) {
-        correctPredictions.textContent = "0";
-    }
-
-    if (wrongPredictions) {
-        wrongPredictions.textContent = "0";
-    }
+if (dataCount) {
+dataCount.textContent = results.length;
 }
 
+if (averageValue) {
+averageValue.textContent =
+stats.average.toFixed(2);
+}
 
-// Mobile menu
-const menuButton = document.getElementById("menuBtn");
-const navigation = document.querySelector(".navbar nav");
+if (frequentValue) {
+frequentValue.textContent =
+stats.mostFrequent;
+}
+}
+
+// ===============================
+// MOBILE MENU
+// ===============================
+const menuButton =
+document.getElementById("menuBtn");
+
+const navigation =
+document.querySelector(".navbar nav");
 
 if (menuButton && navigation) {
 
-    menuButton.addEventListener("click", () => {
+menuButton.addEventListener("click", () => {
 
-        navigation.classList.toggle("mobile-open");
+navigation.classList.toggle(  
+  "mobile-open"  
+);
 
-    });
-
-}// Mobile menu
-const menuButton = document.getElementById("menuBtn");
-const navigation = document.querySelector(".navbar nav");
-
-if (menuButton && navigation) {
-
-    menuButton.addEventListener("click", () => {
-
-        navigation.classList.toggle("mobile-open");
-
-    });
-
+});
 }
+
+// ===============================
+// START
+// ===============================
+loadResults();
