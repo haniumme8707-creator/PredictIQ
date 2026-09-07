@@ -1,1 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
 
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>History | PredictIQ</title>
+
+  <link rel="stylesheet" href="../style.css">
+</head>
+
+<body>
+
+  <header class="navbar">
+
+    <div class="logo">PredictIQ</div>
+
+    <button id="menuBtn" class="menu-btn">☰</button>
+
+    <nav>
+      <a href="../index.html">Dashboard</a>
+      <a href="analysis.html">Analysis</a>
+      <a href="predictions.html">Predictions</a>
+      <a href="history.html" class="active">History</a>
+      <a href="accuracy.html">Accuracy</a>
+    </nav>
+
+  </header>
+
+
+  <main class="history-page">
+
+    <section class="page-header">
+
+      <p class="eyebrow">PREDICTION RECORDS</p>
+
+      <h1>Prediction History</h1>
+
+      <p>
+        View your saved statistical predictions and their results.
+      </p>
+
+    </section>
+
+
+    <section class="history-card">
+
+      <div class="history-header">
+        <span>Prediction</span>
+        <span>Actual</span>
+        <span>Status</span>
+      </div>
+
+      <div id="historyList">
+        Loading...
+      </div>
+
+    </section>
+
+
+    <p class="disclaimer">
+      ⚠️ Historical records are for statistical analysis only.
+      Chance-based outcomes cannot be reliably predicted.
+    </p>
+
+  </main>
+
+
+  <script src="../history.js"></script>
+
+</body>
+
+</html>
