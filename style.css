@@ -550,3 +550,371 @@ footer {
     }
 
     }
+/* =========================
+   PREDICTIONS PAGE
+========================= */
+
+.prediction-page,
+.history-page,
+.accuracy-page {
+    width: min(1000px, 90%);
+    margin: auto;
+    padding: 75px 0;
+}
+
+.page-header {
+    margin-bottom: 35px;
+}
+
+.page-header h1 {
+    font-size: clamp(38px, 6vw, 58px);
+    letter-spacing: -2.5px;
+}
+
+.page-header > p:last-child {
+    margin-top: 14px;
+    color: var(--muted);
+    line-height: 1.7;
+    max-width: 600px;
+}
+
+.prediction-page .prediction-card {
+    text-align: center;
+    padding: 45px 30px;
+}
+
+.prediction-label {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+
+.prediction-number {
+    font-size: clamp(90px, 15vw, 150px);
+    font-weight: 800;
+    line-height: 1;
+    margin: 20px 0 30px;
+    color: var(--accent-2);
+    text-shadow: 0 0 35px rgba(124,108,255,0.25);
+}
+
+.confidence-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--card-2);
+}
+
+.confidence-box span {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.confidence-box strong {
+    font-size: 14px;
+    color: var(--success);
+}
+
+.prediction-actions {
+    margin-top: 25px;
+}
+
+.prediction-actions button,
+.result-input-row button {
+    border: none;
+    border-radius: 10px;
+    padding: 12px 20px;
+    background: var(--accent);
+    color: white;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.25s ease;
+}
+
+.prediction-actions button:hover,
+.result-input-row button:hover {
+    transform: translateY(-2px);
+    opacity: 0.9;
+}
+
+.save-status {
+    margin-top: 12px;
+    color: var(--success);
+    font-size: 12px;
+}
+
+
+/* =========================
+   RECENT RESULTS
+========================= */
+
+.recent-section,
+.method-card,
+.result-entry {
+    margin-top: 30px;
+    padding: 28px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--card);
+}
+
+.recent-section h2,
+.method-card h2,
+.result-entry h2 {
+    font-size: 20px;
+    margin-bottom: 18px;
+}
+
+.recent-results {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+}
+
+.recent-result {
+    padding: 15px;
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    background: var(--card-2);
+    text-align: center;
+}
+
+.recent-result span {
+    display: block;
+    color: var(--muted);
+    font-size: 10px;
+    margin-bottom: 7px;
+}
+
+.recent-result strong {
+    font-size: 22px;
+}
+
+.method-card p,
+.result-entry > p {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.signals {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 22px;
+}
+
+.signal {
+    padding: 18px;
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    background: var(--card-2);
+}
+
+.signal strong {
+    display: block;
+    font-size: 22px;
+    color: var(--accent-2);
+}
+
+.signal span {
+    display: block;
+    margin-top: 5px;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.disclaimer {
+    margin-top: 25px;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.7;
+}
+
+
+/* =========================
+   RESULT ENTRY
+========================= */
+
+.result-input-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.result-input-row input {
+    width: 100px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card-2);
+    color: var(--text);
+    padding: 12px;
+    font-family: inherit;
+    outline: none;
+}
+
+.result-input-row input:focus {
+    border-color: var(--accent);
+}
+
+#resultStatus {
+    margin-top: 14px;
+    font-size: 12px;
+}
+
+
+/* =========================
+   HISTORY PAGE
+========================= */
+
+.history-card {
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    background: var(--card);
+}
+
+.history-header,
+.history-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    padding: 18px 22px;
+}
+
+.history-header {
+    color: var(--muted);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--border);
+}
+
+.history-row {
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+}
+
+.history-row:last-child {
+    border-bottom: none;
+}
+
+.history-row span:first-child {
+    font-weight: 700;
+}
+
+.history-row span:last-child {
+    color: var(--accent-2);
+    font-weight: 600;
+}
+
+.empty-history {
+    padding: 45px 20px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+
+/* =========================
+   ACCURACY PAGE
+========================= */
+
+.accuracy-card {
+    padding: 45px 25px;
+    text-align: center;
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    background:
+        radial-gradient(
+            circle at top right,
+            rgba(124,108,255,0.15),
+            transparent 40%
+        ),
+        var(--card);
+}
+
+.accuracy-number {
+    font-size: clamp(65px, 12vw, 110px);
+    font-weight: 800;
+    color: var(--accent-2);
+    letter-spacing: -4px;
+}
+
+.accuracy-card p {
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.accuracy-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.accuracy-stats .stat-card {
+    text-align: center;
+}
+
+.accuracy-message {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 25px;
+}
+
+
+/* =========================
+   MOBILE PREDICTION PAGES
+========================= */
+
+@media (max-width: 600px) {
+
+    .prediction-page,
+    .history-page,
+    .accuracy-page {
+        width: 92%;
+        padding: 55px 0;
+    }
+
+    .prediction-page .prediction-card {
+        padding: 35px 20px;
+    }
+
+    .recent-results {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .signals {
+        grid-template-columns: 1fr;
+    }
+
+    .history-header,
+    .history-row {
+        padding: 15px;
+        font-size: 11px;
+    }
+
+    .accuracy-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .result-input-row {
+        flex-direction: column;
+    }
+
+    .result-input-row input {
+        width: 100%;
+    }
+
+    .result-input-row button {
+        width: 100%;
+    }
+    }
