@@ -333,72 +333,68 @@ function predictNext(data) {
   };
 }
 
-
 // ===============================
 // WALK-FORWARD BACKTEST
 // ===============================
 function runBacktest(data) {
 
   if (data.length < 15) {
-
     return {
       tested: 0,
       correct: 0,
-      accuracy: null
+      accuracy: null,
+      baseline: null,
+      improvement: null
     };
-
   }
-
 
   let tested = 0;
   let correct = 0;
 
-
-  /*
-    At each step, only results before
-    the actual result are used.
-  */
-
+  // Test prediction at every historical point
   for (let i = 10; i < data.length; i++) {
 
-    const trainingData =
-      data.slice(0, i);
+    const trainingData = data.slice(0, i);
+    const actual = data[i];
 
-    const actual =
-      data[i];
+    const prediction = predictNext(trainingData);
 
-
-    const prediction =
-      predictNext(trainingData);
-
-
-    if (
-      prediction.prediction === actual
-    ) {
-
+    if (prediction.prediction === actual) {
       correct++;
-
     }
 
     tested++;
-
   }
 
+  const accuracy =
+    tested > 0
+      ? (correct / tested) * 100
+      : null;
+
+  // Majority-number baseline
+  const frequency = getFrequency(data);
+
+  const highestFrequency =
+    Math.max(...Object.values(frequency));
+
+  const baseline =
+    data.length > 0
+      ? (highestFrequency / data.length) * 100
+      : null;
+
+  const improvement =
+    accuracy !== null && baseline !== null
+      ? accuracy - baseline
+      : null;
 
   return {
-
     tested,
-
     correct,
-
-    accuracy:
-      tested > 0
-        ? (correct / tested) * 100
-        : null
-
+    accuracy,
+    baseline,
+    improvement
   };
 }
-
 
 // ===============================
 // SHOW PREDICTION
