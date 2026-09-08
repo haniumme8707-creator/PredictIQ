@@ -1,18 +1,19 @@
 let results = [];
 let currentPrediction = null;
 
-// ===============================
-// LOAD RESULTS
-// ===============================
 
+// ===============================
+// LOAD DATA
+// ===============================
 async function loadPredictionData() {
 
   try {
 
-    const response = await fetch("../data/results.json");
+    const response =
+      await fetch("../data/results.json");
 
     if (!response.ok) {
-      throw new Error("Unable to load results");
+      throw new Error("Unable to load data");
     }
 
     results = await response.json();
@@ -21,362 +22,408 @@ async function loadPredictionData() {
       throw new Error("Not enough data");
     }
 
+    results = results
+      .map(Number)
+      .filter(n => Number.isInteger(n) && n >= 0 && n <= 9);
+
     showPrediction();
     showRecentResults();
 
   } catch (error) {
 
-    console.error("PredictIQ:", error);
+    console.error(error);
 
     const prediction =
       document.getElementById("predictionValue");
-
-    const confidence =
-      document.getElementById("confidenceValue");
 
     if (prediction) {
       prediction.textContent = "—";
     }
 
-    if (confidence) {
-      confidence.textContent = "Data unavailable";
+  }
+}
+
+
+// ===============================
+// COLOR RULES
+// ===============================
+function getColor(number) {
+
+  if (number === 0 || number === 5) {
+    return "Violet";
+  }
+
+  if (
+    number === 1 ||
+    number === 3 ||
+    number === 7 ||
+    number === 9
+  ) {
+    return "Green";
+  }
+
+  return "Red";
+}
+
+
+// ===============================
+// BIG / SMALL
+// ===============================
+function getSize(number) {
+
+  return number <= 4
+    ? "Small"
+    : "Big";
+}
+
+
+// ===============================
+// FREQUENCY
+// ===============================
+function getFrequency(data) {
+
+  const frequency = {};
+
+  for (let number = 0; number <= 9; number++) {
+    frequency[number] = 0;
+  }
+
+  data.forEach(number => {
+    frequency[number]++;
+  });
+
+  return frequency;
+}
+
+
+// ===============================
+// TRANSITIONS
+// ===============================
+function getTransitions(data, lastNumber) {
+
+  const transitions = {};
+
+  for (let number = 0; number <= 9; number++) {
+    transitions[number] = 0;
+  }
+
+  let total = 0;
+
+  for (let i = 0; i < data.length - 1; i++) {
+
+    if (data[i] === lastNumber) {
+
+      transitions[data[i + 1]]++;
+      total++;
+
     }
+  }
+
+  return {
+    transitions,
+    total
+  };
+}
+
+
+// ===============================
+// CURRENT GAPS
+// ===============================
+function getGaps(data) {
+
+  const gaps = {};
+
+  for (let number = 0; number <= 9; number++) {
+
+    let gap = data.length;
+
+    for (let i = data.length - 1; i >= 0; i--) {
+
+      if (data[i] === number) {
+
+        gap = data.length - 1 - i;
+        break;
+
+      }
+    }
+
+    gaps[number] = gap;
+  }
+
+  return gaps;
+}
+
+
+// ===============================
+// SCORE NUMBERS
+// ===============================
+function calculateScores(data) {
+
+  const frequency =
+    getFrequency(data);
+
+  const recent20 =
+    data.slice(-20);
+
+  const recent50 =
+    data.slice(-50);
+
+  const recent20Freq =
+    getFrequency(recent20);
+
+  const recent50Freq =
+    getFrequency(recent50);
+
+  const lastNumber =
+    data[data.length - 1];
+
+  const transitionData =
+    getTransitions(data, lastNumber);
+
+  const transitions =
+    transitionData.transitions;
+
+  const transitionTotal =
+    transitionData.total;
+
+
+  const scores = [];
+
+
+  for (let number = 0; number <= 9; number++) {
+
+    // Overall frequency
+    const frequencyScore =
+      data.length > 0
+        ? frequency[number] / data.length
+        : 0;
+
+
+    // Recent 50
+    const recent50Score =
+      recent50.length > 0
+        ? recent50Freq[number] / recent50.length
+        : 0;
+
+
+    // Recent 20 gets extra recency weight
+    const recent20Score =
+      recent20.length > 0
+        ? recent20Freq[number] / recent20.length
+        : 0;
+
+
+    // Transition signal
+    let transitionScore = 0;
+
+    if (transitionTotal >= 5) {
+
+      transitionScore =
+        transitions[number] / transitionTotal;
+
+    }
+
+
+    /*
+      We report gaps separately.
+      We DO NOT assume that a long-missing
+      number is automatically "due".
+    */
+
+    const score =
+      (frequencyScore * 0.25) +
+      (recent50Score * 0.25) +
+      (recent20Score * 0.25) +
+      (transitionScore * 0.25);
+
+
+    scores.push({
+      number,
+      score,
+      frequency: frequency[number],
+      recent50: recent50Freq[number],
+      recent20: recent20Freq[number],
+      transitions: transitions[number]
+    });
 
   }
 
-}
-// ===============================
-// ADVANCED STATISTICAL ANALYZER
-// ===============================
 
+  return {
+    scores,
+    frequency,
+    recent20Freq,
+    recent50Freq,
+    transitions,
+    transitionTotal,
+    gaps: getGaps(data)
+  };
+}
+
+
+// ===============================
+// PREDICTION ENGINE
+// ===============================
 function predictNext(data) {
 
-  const total = data.length;
-  const recent20 = data.slice(-20);
-  const recent50 = data.slice(-50);
+  const analysis =
+    calculateScores(data);
 
-  const candidates = {};
 
-  for (let i = 0; i <= 9; i++) {
+  const ranked =
+    analysis.scores
+      .slice()
+      .sort((a, b) => b.score - a.score);
 
-    candidates[i] = {
-      frequency: 0,
-      recent: 0,
-      gap: 0,
-      transition: 0,
-      score: 0
+
+  const top =
+    ranked.slice(0, 3);
+
+
+  const first =
+    top[0];
+
+  const second =
+    top[1];
+
+
+  const margin =
+    first.score - second.score;
+
+
+  let strength =
+    "Weak";
+
+
+  if (margin >= 0.03) {
+    strength = "Strong";
+  } else if (margin >= 0.015) {
+    strength = "Moderate";
+  }
+
+
+  return {
+
+    prediction: first.number,
+
+    candidates: top,
+
+    strength,
+
+    score: first.score,
+
+    frequency:
+      analysis.frequency,
+
+    recent20:
+      analysis.recent20Freq,
+
+    recent50:
+      analysis.recent50Freq,
+
+    transitions:
+      analysis.transitions,
+
+    transitionTotal:
+      analysis.transitionTotal,
+
+    gaps:
+      analysis.gaps
+
+  };
+}
+
+
+// ===============================
+// WALK-FORWARD BACKTEST
+// ===============================
+function runBacktest(data) {
+
+  if (data.length < 15) {
+
+    return {
+      tested: 0,
+      correct: 0,
+      accuracy: null
     };
 
   }
 
 
-  // =============================
-  // OVERALL FREQUENCY
-  // =============================
-
-  const frequency = {};
-
-  data.forEach(number => {
-
-    frequency[number] =
-      (frequency[number] || 0) + 1;
-
-  });
+  let tested = 0;
+  let correct = 0;
 
 
-  for (let i = 0; i <= 9; i++) {
+  /*
+    At each step, only results before
+    the actual result are used.
+  */
 
-    candidates[i].frequency =
-      (frequency[i] || 0) / total;
+  for (let i = 10; i < data.length; i++) {
 
-  }
+    const trainingData =
+      data.slice(0, i);
 
-
-  // =============================
-  // RECENT FREQUENCY
-  // =============================
-
-  const recentFrequency = {};
-
-  recent50.forEach(number => {
-
-    recentFrequency[number] =
-      (recentFrequency[number] || 0) + 1;
-
-  });
+    const actual =
+      data[i];
 
 
-  const recentTotal = recent50.length;
+    const prediction =
+      predictNext(trainingData);
 
 
-  for (let i = 0; i <= 9; i++) {
-
-    candidates[i].recent =
-      recentTotal > 0
-        ? (recentFrequency[i] || 0) / recentTotal
-        : 0;
-
-  }
-
-
-  // =============================
-  // NUMBER GAP
-  // =============================
-
-  for (let i = 0; i <= 9; i++) {
-
-    let gap = 0;
-
-    for (
-      let j = data.length - 1;
-      j >= 0;
-      j--
+    if (
+      prediction.prediction === actual
     ) {
 
-      if (data[j] === i) {
-        break;
-      }
-
-      gap++;
+      correct++;
 
     }
 
-    candidates[i].gap = gap;
-
-  }
-
-
-  // =============================
-  // NORMALIZE GAP
-  // =============================
-
-  const maxGap =
-    Math.max(
-      ...Object.values(candidates)
-        .map(item => item.gap)
-    );
-
-  if (maxGap > 0) {
-
-    for (let i = 0; i <= 9; i++) {
-
-      candidates[i].gap =
-        candidates[i].gap / maxGap;
-
-    }
-
-  }
-
-
-  // =============================
-  // LAST NUMBER TRANSITIONS
-  // =============================
-
-  const lastNumber =
-    data[data.length - 1];
-
-  const transitions = {};
-
-  for (let i = 0; i <= 9; i++) {
-    transitions[i] = 0;
-  }
-
-
-  let transitionCount = 0;
-
-
-  for (
-    let i = 0;
-    i < data.length - 1;
-    i++
-  ) {
-
-    if (data[i] === lastNumber) {
-
-      const next =
-        data[i + 1];
-
-      transitions[next]++;
-      transitionCount++;
-
-    }
-
-  }
-
-
-  if (transitionCount > 0) {
-
-    for (let i = 0; i <= 9; i++) {
-
-      candidates[i].transition =
-        transitions[i] / transitionCount;
-
-    }
-
-  }
-
-
-  // =============================
-  // NORMALIZE FREQUENCY
-  // =============================
-
-  const maxFrequency =
-    Math.max(
-      ...Object.values(candidates)
-        .map(item => item.frequency)
-    );
-
-  const maxRecent =
-    Math.max(
-      ...Object.values(candidates)
-        .map(item => item.recent)
-    );
-
-  const maxTransition =
-    Math.max(
-      ...Object.values(candidates)
-        .map(item => item.transition)
-    );
-
-
-  for (let i = 0; i <= 9; i++) {
-
-    const frequencyScore =
-      maxFrequency > 0
-        ? candidates[i].frequency / maxFrequency
-        : 0;
-
-    const recentScore =
-      maxRecent > 0
-        ? candidates[i].recent / maxRecent
-        : 0;
-
-    const transitionScore =
-      maxTransition > 0
-        ? candidates[i].transition / maxTransition
-        : 0;
-
-
-    // ===========================
-    // COMBINED STATISTICAL SCORE
-    // ===========================
-
-    candidates[i].score =
-      (frequencyScore * 0.30) +
-      (recentScore * 0.30) +
-      (transitionScore * 0.25) +
-      (candidates[i].gap * 0.15);
-
-  }
-
-
-  // =============================
-  // SORT TOP CANDIDATES
-  // =============================
-
-  const ranked =
-    Object.entries(candidates)
-      .sort(
-        (a, b) =>
-          b[1].score - a[1].score
-      );
-
-
-  const prediction =
-    Number(ranked[0][0]);
-
-
-  // =============================
-  // STATISTICAL STRENGTH
-  // =============================
-
-  const topScore =
-    ranked[0][1].score;
-
-  const secondScore =
-    ranked[1][1].score;
-
-  let strength = "Low";
-
-  if (
-    topScore > 0 &&
-    topScore >= secondScore * 1.25
-  ) {
-
-    strength = "Strong";
-
-  } else if (
-    topScore > 0 &&
-    topScore >= secondScore * 1.10
-  ) {
-
-    strength = "Medium";
+    tested++;
 
   }
 
 
   return {
 
-    prediction: prediction,
+    tested,
 
-    confidence:
-      topScore * 100,
+    correct,
 
-    strength: strength,
-
-    candidates: ranked.slice(0, 3),
-
-    frequency: frequency,
-
-    recentFrequency: recentFrequency,
-
-    recent20: recent20,
-
-    recent50: recent50,
-
-    gaps: candidates,
-
-    transitions: transitions,
-
-    transitionCount: transitionCount,
-
-    lastNumber: lastNumber
+    accuracy:
+      tested > 0
+        ? (correct / tested) * 100
+        : null
 
   };
-
-      }
-
-
+}
 
 
 // ===============================
 // SHOW PREDICTION
 // ===============================
-
 function showPrediction() {
 
-  const predictionData =
-    predictNext(results);
-  
+  if (!results.length) return;
+
+
   currentPrediction =
-    predictionData.prediction;
+    predictNext(results);
+
 
   const predictionElement =
-    document.getElementById(
-      "predictionValue"
-    );
+    document.getElementById("predictionValue");
 
 
   const confidenceElement =
-    document.getElementById(
-      "confidenceValue"
-    );
+    document.getElementById("confidenceValue");
 
 
   if (predictionElement) {
 
     predictionElement.textContent =
-      predictionData.prediction;
+      currentPrediction.prediction;
 
   }
 
@@ -384,24 +431,205 @@ function showPrediction() {
   if (confidenceElement) {
 
     confidenceElement.textContent =
-      predictionData.confidence.toFixed(1) + "%";
+      currentPrediction.strength;
 
   }
+
+
+  showPredictionReport();
 
 }
 
 
 // ===============================
-// SHOW RECENT RESULTS
+// PREDICTION REPORT
 // ===============================
+function showPredictionReport() {
 
+  const card =
+    document.querySelector(".prediction-card");
+
+  if (!card || !currentPrediction) return;
+
+
+  let report =
+    document.getElementById("predictionReport");
+
+
+  if (!report) {
+
+    report =
+      document.createElement("div");
+
+    report.id =
+      "predictionReport";
+
+    report.className =
+      "prediction-report";
+
+    const actions =
+      card.querySelector(".prediction-actions");
+
+    if (actions) {
+      actions.before(report);
+    } else {
+      card.appendChild(report);
+    }
+
+  }
+
+
+  const predicted =
+    currentPrediction.prediction;
+
+
+  const candidates =
+    currentPrediction.candidates;
+
+
+  const backtest =
+    runBacktest(results);
+
+
+  let backtestText =
+    "Not enough historical data.";
+
+
+  if (backtest.accuracy !== null) {
+
+    backtestText =
+      `${backtest.accuracy.toFixed(1)}% historical hit rate ` +
+      `(${backtest.correct}/${backtest.tested})`;
+
+  }
+
+
+  report.innerHTML = `
+
+    <div class="prediction-details">
+
+      <div class="prediction-detail">
+        <span>Color</span>
+        <strong>
+          ${getColor(predicted)}
+        </strong>
+      </div>
+
+      <div class="prediction-detail">
+        <span>Size</span>
+        <strong>
+          ${getSize(predicted)}
+        </strong>
+      </div>
+
+      <div class="prediction-detail">
+        <span>Signal</span>
+        <strong>
+          ${currentPrediction.strength}
+        </strong>
+      </div>
+
+    </div>
+
+
+    <div class="candidate-section">
+
+      <h3>Top Statistical Candidates</h3>
+
+      <div class="candidate-list">
+
+        ${candidates.map((item, index) => `
+
+          <div class="candidate">
+
+            <span class="candidate-rank">
+              #${index + 1}
+            </span>
+
+            <strong>
+              ${item.number}
+            </strong>
+
+            <span>
+              ${getColor(item.number)}
+            </span>
+
+            <span>
+              ${getSize(item.number)}
+            </span>
+
+          </div>
+
+        `).join("")}
+
+      </div>
+
+    </div>
+
+
+    <div class="prediction-evidence">
+
+      <h3>Statistical Evidence</h3>
+
+      <p>
+        Overall frequency:
+        <strong>
+          ${currentPrediction.frequency[predicted]}
+        </strong>
+      </p>
+
+      <p>
+        Recent 20 appearances:
+        <strong>
+          ${currentPrediction.recent20[predicted]}
+        </strong>
+      </p>
+
+      <p>
+        Recent 50 appearances:
+        <strong>
+          ${currentPrediction.recent50[predicted]}
+        </strong>
+      </p>
+
+      <p>
+        Current gap:
+        <strong>
+          ${currentPrediction.gaps[predicted]}
+        </strong>
+      </p>
+
+      <p>
+        Previous-number transition count:
+        <strong>
+          ${currentPrediction.transitions[predicted]}
+        </strong>
+      </p>
+
+    </div>
+
+
+    <div class="backtest-box">
+
+      <h3>Historical Backtest</h3>
+
+      <p>
+        ${backtestText}
+      </p>
+
+    </div>
+
+  `;
+}
+
+
+// ===============================
+// RECENT RESULTS
+// ===============================
 function showRecentResults() {
 
   const container =
-    document.getElementById(
-      "recentResults"
-    );
-
+    document.getElementById("recentResults");
 
   if (!container) return;
 
@@ -413,25 +641,262 @@ function showRecentResults() {
   container.innerHTML = "";
 
 
-  recent.forEach((number, index) => {
+  recent.forEach((value, index) => {
 
     const item =
       document.createElement("div");
-
 
     item.className =
       "recent-result";
 
 
     item.innerHTML = `
-      <span>#${index + 1}</span>
-      <strong>${number}</strong>
+
+      <span class="recent-number">
+        #${results.length - index}
+      </span>
+
+      <span class="recent-value">
+        ${value}
+      </span>
+
     `;
 
 
     container.appendChild(item);
 
   });
+}
+
+
+// ===============================
+// SAVE PREDICTION
+// ===============================
+function savePrediction() {
+
+  if (!currentPrediction) return;
+
+
+  const history =
+    JSON.parse(
+      localStorage.getItem("predictIQ_history") || "[]"
+    );
+
+
+  history.push({
+
+    prediction:
+      currentPrediction.prediction,
+
+    candidates:
+      currentPrediction.candidates
+        .map(item => item.number),
+
+    color:
+      getColor(currentPrediction.prediction),
+
+    size:
+      getSize(currentPrediction.prediction),
+
+    strength:
+      currentPrediction.strength,
+
+    actual: null,
+
+    status: "Pending",
+
+    timestamp:
+      new Date().toISOString()
+
+  });
+
+
+  localStorage.setItem(
+    "predictIQ_history",
+    JSON.stringify(history)
+  );
+
+
+  const status =
+    document.getElementById("saveStatus");
+
+
+  if (status) {
+
+    status.textContent =
+      "Prediction saved successfully.";
+
+  }
+
+}
+
+
+// ===============================
+// CHECK ACTUAL RESULT
+// ===============================
+function checkActualResult() {
+
+  const input =
+    document.getElementById("actualResult");
+
+
+  const value =
+    Number(input?.value);
+
+
+  if (
+    !Number.isInteger(value) ||
+    value < 0 ||
+    value > 9
+  ) {
+
+    return;
+
+  }
+
+
+  const history =
+    JSON.parse(
+      localStorage.getItem("predictIQ_history") || "[]"
+    );
+
+
+  for (let i = history.length - 1; i >= 0; i--) {
+
+    if (history[i].actual === null) {
+
+      history[i].actual = value;
+
+      history[i].status =
+        history[i].prediction === value
+          ? "Correct"
+          : "Incorrect";
+
+      break;
+
+    }
+
+  }
+
+
+  localStorage.setItem(
+    "predictIQ_history",
+    JSON.stringify(history)
+  );
+
+
+  const status =
+    document.getElementById("resultStatus");
+
+
+  if (status) {
+
+    status.textContent =
+      history[history.length - 1]?.prediction === value
+        ? "Result matched the saved prediction."
+        : "Result did not match the saved prediction.";
+
+  }
+
+}
+
+
+// ===============================
+// USER RESULT INPUT
+// ===============================
+function analyseUserResults() {
+
+  const input =
+    document.getElementById("resultsInput");
+
+
+  const status =
+    document.getElementById("inputStatus");
+
+
+  if (!input) return;
+
+
+  const values =
+    input.value
+      .split(",")
+      .map(value => Number(value.trim()))
+      .filter(value =>
+        Number.isInteger(value) &&
+        value >= 0 &&
+        value <= 9
+      );
+
+
+  if (values.length < 5) {
+
+    if (status) {
+
+      status.textContent =
+        "Please enter at least 5 valid numbers (0–9).";
+
+    }
+
+    return;
+
+  }
+
+
+  results = values;
+
+
+  showPrediction();
+  showRecentResults();
+
+
+  if (status) {
+
+    status.textContent =
+      `${values.length} results analysed successfully.`;
+
+  }
+
+}
+
+
+// ===============================
+// BUTTONS
+// ===============================
+const saveButton =
+  document.getElementById("savePredictionBtn");
+
+if (saveButton) {
+
+  saveButton.addEventListener(
+    "click",
+    savePrediction
+  );
+
+}
+
+
+const checkButton =
+  document.getElementById("checkResultBtn");
+
+if (checkButton) {
+
+  checkButton.addEventListener(
+    "click",
+    checkActualResult
+  );
+
+}
+
+
+const analyseButton =
+  document.getElementById("analyseBtn");
+
+if (analyseButton) {
+
+  analyseButton.addEventListener(
+    "click",
+    analyseUserResults
+  );
 
 }
 
@@ -439,7 +904,6 @@ function showRecentResults() {
 // ===============================
 // MOBILE MENU
 // ===============================
-
 const menuButton =
   document.getElementById("menuBtn");
 
@@ -449,228 +913,13 @@ const navigation =
 
 if (menuButton && navigation) {
 
-  menuButton.addEventListener(
-    "click",
-    () => {
+  menuButton.addEventListener("click", () => {
 
-      navigation.classList.toggle(
-        "mobile-open"
-      );
+    navigation.classList.toggle(
+      "mobile-open"
+    );
 
-    }
-  );
-
-}
-// ===============================
-// SAVE PREDICTION
-// ===============================
-
-function savePrediction() {
-
-  if (currentPrediction === null) return;
-
-  const history = JSON.parse(
-    localStorage.getItem("predictIQ_history") || "[]"
-  );
-
-  history.push({
-    id: Date.now(),
-    prediction: currentPrediction,
-    actual: null,
-    status: "Pending",
-    timestamp: new Date().toISOString()
   });
-
-  localStorage.setItem(
-    "predictIQ_history",
-    JSON.stringify(history)
-  );
-
-  const status = document.getElementById("saveStatus");
-
-  if (status) {
-    status.textContent = "Prediction saved successfully.";
-  }
-}
-
-
-// ===============================
-// SAVE BUTTON
-// ===============================
-
-const savePredictionBtn =
-  document.getElementById("savePredictionBtn");
-
-if (savePredictionBtn) {
-
-  savePredictionBtn.addEventListener(
-    "click",
-    savePrediction
-  );
-
-} 
-
-// ===============================
-// CHECK ACTUAL RESULT
-// ===============================
-
-function checkActualResult() {
-
-  const input =
-    document.getElementById("actualResult");
-
-  const status =
-    document.getElementById("resultStatus");
-
-  if (!input || input.value === "") {
-    if (status) {
-      status.textContent = "Please enter the actual result.";
-    }
-    return;
-  }
-
-  const actual = Number(input.value);
-
-  if (actual < 0 || actual > 9) {
-    if (status) {
-      status.textContent = "Enter a number between 0 and 9.";
-    }
-    return;
-  }
-
-  const history = JSON.parse(
-    localStorage.getItem("predictIQ_history") || "[]"
-  );
-
-  if (history.length === 0) {
-    if (status) {
-      status.textContent = "No saved prediction found.";
-    }
-    return;
-  }
-
-  // Find latest pending prediction
-  let latest = null;
-
-  for (let i = history.length - 1; i >= 0; i--) {
-    if (history[i].status === "Pending") {
-      latest = history[i];
-      break;
-    }
-  }
-
-  if (!latest) {
-    if (status) {
-      status.textContent = "No pending prediction found.";
-    }
-    return;
-  }
-
-  latest.actual = actual;
-
-  if (latest.prediction === actual) {
-    latest.status = "Correct";
-    status.textContent = "✓ Prediction was correct!";
-  } else {
-    latest.status = "Incorrect";
-    status.textContent = "✕ Prediction was incorrect.";
-  }
-
-  localStorage.setItem(
-    "predictIQ_history",
-    JSON.stringify(history)
-  );
-}
-
-
-// ===============================
-// CHECK RESULT BUTTON
-// ===============================
-
-const checkResultBtn =
-  document.getElementById("checkResultBtn");
-
-if (checkResultBtn) {
-
-  checkResultBtn.addEventListener(
-    "click",
-    checkActualResult
-  );
-
-}
-// ===============================
-// ANALYSE USER RESULTS
-// ===============================
-
-function analyseUserResults() {
-
-  const input =
-    document.getElementById("resultsInput");
-
-  const status =
-    document.getElementById("inputStatus");
-
-  if (!input) return;
-
-  const values = input.value
-    .split(",")
-    .map(value => value.trim())
-    .filter(value => value !== "")
-    .map(Number);
-
-  if (values.length < 5) {
-
-    if (status) {
-      status.textContent =
-        "Please enter at least 5 results.";
-    }
-
-    return;
-  }
-
-  if (
-    values.some(
-      value =>
-        !Number.isInteger(value) ||
-        value < 0 ||
-        value > 9
-    )
-  ) {
-
-    if (status) {
-      status.textContent =
-        "Use numbers from 0 to 9 only.";
-    }
-
-    return;
-  }
-
-  results = values;
-
-  showPrediction();
-  showRecentResults();
-
-  if (status) {
-    status.textContent =
-      "Results analysed successfully.";
-  }
-
-}
-
-
-// ===============================
-// ANALYSE BUTTON
-// ===============================
-
-const analyseBtn =
-  document.getElementById("analyseBtn");
-
-if (analyseBtn) {
-
-  analyseBtn.addEventListener(
-    "click",
-    analyseUserResults
-  );
 
 }
 
@@ -678,5 +927,4 @@ if (analyseBtn) {
 // ===============================
 // START
 // ===============================
-
 loadPredictionData();
