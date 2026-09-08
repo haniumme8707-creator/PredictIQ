@@ -45,28 +45,308 @@ async function loadPredictionData() {
   }
 
 }
-
-
 // ===============================
-// PREDICTION ENGINE
+// ADVANCED STATISTICAL ANALYZER
 // ===============================
 
 function predictNext(data) {
 
-  const candidates = {};
+  const total = data.length;
+  const recent20 = data.slice(-20);
+  const recent50 = data.slice(-50);
 
-  // Create candidates 0–9
+  const candidates = {};
 
   for (let i = 0; i <= 9; i++) {
 
     candidates[i] = {
       frequency: 0,
-      recency: 0,
-      pattern: 0,
+      recent: 0,
+      gap: 0,
+      transition: 0,
       score: 0
     };
 
   }
+
+
+  // =============================
+  // OVERALL FREQUENCY
+  // =============================
+
+  const frequency = {};
+
+  data.forEach(number => {
+
+    frequency[number] =
+      (frequency[number] || 0) + 1;
+
+  });
+
+
+  for (let i = 0; i <= 9; i++) {
+
+    candidates[i].frequency =
+      (frequency[i] || 0) / total;
+
+  }
+
+
+  // =============================
+  // RECENT FREQUENCY
+  // =============================
+
+  const recentFrequency = {};
+
+  recent50.forEach(number => {
+
+    recentFrequency[number] =
+      (recentFrequency[number] || 0) + 1;
+
+  });
+
+
+  const recentTotal = recent50.length;
+
+
+  for (let i = 0; i <= 9; i++) {
+
+    candidates[i].recent =
+      recentTotal > 0
+        ? (recentFrequency[i] || 0) / recentTotal
+        : 0;
+
+  }
+
+
+  // =============================
+  // NUMBER GAP
+  // =============================
+
+  for (let i = 0; i <= 9; i++) {
+
+    let gap = 0;
+
+    for (
+      let j = data.length - 1;
+      j >= 0;
+      j--
+    ) {
+
+      if (data[j] === i) {
+        break;
+      }
+
+      gap++;
+
+    }
+
+    candidates[i].gap = gap;
+
+  }
+
+
+  // =============================
+  // NORMALIZE GAP
+  // =============================
+
+  const maxGap =
+    Math.max(
+      ...Object.values(candidates)
+        .map(item => item.gap)
+    );
+
+  if (maxGap > 0) {
+
+    for (let i = 0; i <= 9; i++) {
+
+      candidates[i].gap =
+        candidates[i].gap / maxGap;
+
+    }
+
+  }
+
+
+  // =============================
+  // LAST NUMBER TRANSITIONS
+  // =============================
+
+  const lastNumber =
+    data[data.length - 1];
+
+  const transitions = {};
+
+  for (let i = 0; i <= 9; i++) {
+    transitions[i] = 0;
+  }
+
+
+  let transitionCount = 0;
+
+
+  for (
+    let i = 0;
+    i < data.length - 1;
+    i++
+  ) {
+
+    if (data[i] === lastNumber) {
+
+      const next =
+        data[i + 1];
+
+      transitions[next]++;
+      transitionCount++;
+
+    }
+
+  }
+
+
+  if (transitionCount > 0) {
+
+    for (let i = 0; i <= 9; i++) {
+
+      candidates[i].transition =
+        transitions[i] / transitionCount;
+
+    }
+
+  }
+
+
+  // =============================
+  // NORMALIZE FREQUENCY
+  // =============================
+
+  const maxFrequency =
+    Math.max(
+      ...Object.values(candidates)
+        .map(item => item.frequency)
+    );
+
+  const maxRecent =
+    Math.max(
+      ...Object.values(candidates)
+        .map(item => item.recent)
+    );
+
+  const maxTransition =
+    Math.max(
+      ...Object.values(candidates)
+        .map(item => item.transition)
+    );
+
+
+  for (let i = 0; i <= 9; i++) {
+
+    const frequencyScore =
+      maxFrequency > 0
+        ? candidates[i].frequency / maxFrequency
+        : 0;
+
+    const recentScore =
+      maxRecent > 0
+        ? candidates[i].recent / maxRecent
+        : 0;
+
+    const transitionScore =
+      maxTransition > 0
+        ? candidates[i].transition / maxTransition
+        : 0;
+
+
+    // ===========================
+    // COMBINED STATISTICAL SCORE
+    // ===========================
+
+    candidates[i].score =
+      (frequencyScore * 0.30) +
+      (recentScore * 0.30) +
+      (transitionScore * 0.25) +
+      (candidates[i].gap * 0.15);
+
+  }
+
+
+  // =============================
+  // SORT TOP CANDIDATES
+  // =============================
+
+  const ranked =
+    Object.entries(candidates)
+      .sort(
+        (a, b) =>
+          b[1].score - a[1].score
+      );
+
+
+  const prediction =
+    Number(ranked[0][0]);
+
+
+  // =============================
+  // STATISTICAL STRENGTH
+  // =============================
+
+  const topScore =
+    ranked[0][1].score;
+
+  const secondScore =
+    ranked[1][1].score;
+
+  let strength = "Low";
+
+  if (
+    topScore > 0 &&
+    topScore >= secondScore * 1.25
+  ) {
+
+    strength = "Strong";
+
+  } else if (
+    topScore > 0 &&
+    topScore >= secondScore * 1.10
+  ) {
+
+    strength = "Medium";
+
+  }
+
+
+  return {
+
+    prediction: prediction,
+
+    confidence:
+      topScore * 100,
+
+    strength: strength,
+
+    candidates: ranked.slice(0, 3),
+
+    frequency: frequency,
+
+    recentFrequency: recentFrequency,
+
+    recent20: recent20,
+
+    recent50: recent50,
+
+    gaps: candidates,
+
+    transitions: transitions,
+
+    transitionCount: transitionCount,
+
+    lastNumber: lastNumber
+
+  };
+
+      }
+
+
 
 
   // =============================
