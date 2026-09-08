@@ -796,7 +796,6 @@ function checkActualResult() {
 
 }
 
-
 // ===============================
 // USER RESULT INPUT
 // ===============================
@@ -805,10 +804,8 @@ function analyseUserResults() {
   const input =
     document.getElementById("resultsInput");
 
-
   const status =
     document.getElementById("inputStatus");
-
 
   if (!input) return;
 
@@ -838,6 +835,14 @@ function analyseUserResults() {
   }
 
 
+  // Save user's historical data
+  localStorage.setItem(
+    "predictIQ_results",
+    JSON.stringify(values)
+  );
+
+
+  // Use user's data immediately
   results = values;
 
 
@@ -848,12 +853,11 @@ function analyseUserResults() {
   if (status) {
 
     status.textContent =
-      `${values.length} results analysed successfully.`;
+      `${values.length} results saved and analysed successfully.`;
 
   }
 
 }
-
 
 // ===============================
 // BUTTONS
