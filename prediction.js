@@ -1,43 +1,102 @@
 let results = [];
 let currentPrediction = null;
+const RESULTS_KEY = "predictIQ_results";
 
+let dataSource = "demo";
 
-// ===============================
-// LOAD DATA
-// ===============================
 async function loadPredictionData() {
 
   try {
 
-    const response =
-      await fetch("../data/results.json");
+    const savedResults =
+      localStorage.getItem(RESULTS_KEY);
 
-    if (!response.ok) {
-      throw new Error("Unable to load data");
+    // ===============================
+    // LOAD USER DATA
+    // ===============================
+    if (savedResults !== null) {
+
+      const parsed =
+        JSON.parse(savedResults);
+
+      if (!Array.isArray(parsed)) {
+        throw new Error("Invalid saved data");
+      }
+
+      results = parsed.map(Number);
+
+      if (
+        results.some(
+          number =>
+            !Number.isInteger(number) ||
+            number < 0 ||
+            number > 9
+        )
+      ) {
+        throw new Error("Invalid saved numbers");
+      }
+
+      dataSource = "saved";
+
     }
 
-    results = await response.json();
+    // ===============================
+    // LOAD DEMO DATA
+    // ===============================
+    else {
 
-    if (!Array.isArray(results) || results.length < 5) {
-      throw new Error("Not enough data");
+      const response =
+        await fetch("../data/results.json");
+
+      if (!response.ok) {
+        throw new Error("Unable to load data");
+      }
+
+      results = await response.json();
+
+      if (!Array.isArray(results)) {
+        throw new Error("Invalid demo data");
+      }
+
+      results = results.map(Number);
+
+      dataSource = "demo";
     }
 
-    results = results
-      .map(Number)
-      .filter(n => Number.isInteger(n) && n >= 0 && n <= 9);
+    updateDatasetInfo();
 
-    showPrediction();
+    // ===============================
+    // SHOW DATA
+    // ===============================
     showRecentResults();
+
+    if (results.length >= 5) {
+
+      showPrediction();
+
+    } else {
+
+      resetPredictionDisplay();
+
+    }
 
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      "Prediction data error:",
+      error
+    );
 
-    const prediction =
-      document.getElementById("predictionValue");
+    results = [];
 
-    if (prediction) {
-      prediction.textContent = "—";
+    resetPredictionDisplay();
+
+    const status =
+      document.getElementById("inputStatus");
+
+    if (status) {
+      status.textContent =
+        "Unable to load historical data.";
     }
 
   }
@@ -797,9 +856,10 @@ function checkActualResult() {
 }
 
 // ===============================
-// USER RESULT INPUT
+// USER DATA SYSTEM
 // ===============================
-function analyseUserResults() {
+
+function getInputResults() {
 
   const input =
     document.getElementById("resultsInput");
@@ -807,58 +867,253 @@ function analyseUserResults() {
   const status =
     document.getElementById("inputStatus");
 
-  if (!input) return;
+  if (!input) return null;
 
+  const raw =
+    input.value.trim();
+
+  if (!raw) {
+
+    if (status) {
+      status.textContent =
+        "Please enter some results.";
+    }
+
+    return null;
+  }
+
+  // Supports:
+  // 7,3,8,8,2
+  // 7 3 8 8 2
+  // 7
+  // 3
+  // 8
 
   const values =
-    input.value
-      .split(",")
-      .map(value => Number(value.trim()))
-      .filter(value =>
-        Number.isInteger(value) &&
-        value >= 0 &&
-        value <= 9
-      );
+    raw
+      .split(/[,\s]+/)
+      .filter(Boolean)
+      .map(Number);
 
+  const invalid =
+    values.some(
+      value =>
+        !Number.isInteger(value) ||
+        value < 0 ||
+        value > 9
+    );
+
+  if (invalid) {
+
+    if (status) {
+      status.textContent =
+        "Only numbers from 0 to 9 are allowed.";
+    }
+
+    return null;
+  }
 
   if (values.length < 5) {
 
     if (status) {
-
       status.textContent =
-        "Please enter at least 5 valid numbers (0–9).";
-
+        "Please enter at least 5 results.";
     }
 
-    return;
-
+    return null;
   }
 
-
-  // Save user's historical data
-  localStorage.setItem(
-    "predictIQ_results",
-    JSON.stringify(values)
-  );
+  return values;
+}
 
 
-  // Use user's data immediately
+// ===============================
+// REPLACE DATASET
+// ===============================
+
+function analyseUserResults() {
+
+  const values =
+    getInputResults();
+
+  const status =
+    document.getElementById("inputStatus");
+
+  if (!values) return;
+
   results = values;
 
+  localStorage.setItem(
+    RESULTS_KEY,
+    JSON.stringify(results)
+  );
+
+  dataSource = "saved";
 
   showPrediction();
   showRecentResults();
-
+  updateDatasetInfo();
 
   if (status) {
 
     status.textContent =
-      `${values.length} results saved and analysed successfully.`;
+      `${values.length} results saved successfully.`;
 
   }
-
 }
 
+
+// ===============================
+// ADD RESULTS
+// ===============================
+
+function addUserResults() {
+
+  const values =
+    getInputResults();
+
+  const status =
+    document.getElementById("inputStatus");
+
+  if (!values) return;
+
+  // Don't accidentally mix user data
+  // with the demo dataset.
+
+  if (dataSource !== "saved") {
+
+    if (status) {
+
+      status.textContent =
+        "First use 'Replace & Analyse' to create your dataset.";
+
+    }
+
+    return;
+  }
+
+  results =
+    results.concat(values);
+
+  localStorage.setItem(
+    RESULTS_KEY,
+    JSON.stringify(results)
+  );
+
+  showPrediction();
+  showRecentResults();
+  updateDatasetInfo();
+
+  if (status) {
+
+    status.textContent =
+      `${values.length} results added. Dataset now has ${results.length} results.`;
+
+  }
+}
+
+
+// ===============================
+// CLEAR USER DATA
+// ===============================
+
+function clearUserData() {
+
+  const status =
+    document.getElementById("inputStatus");
+
+  localStorage.setItem(
+    RESULTS_KEY,
+    JSON.stringify([])
+  );
+
+  results = [];
+
+  currentPrediction = null;
+
+  dataSource = "saved";
+
+  const input =
+    document.getElementById("resultsInput");
+
+  if (input) {
+    input.value = "";
+  }
+
+  resetPredictionDisplay();
+
+  showRecentResults();
+
+  updateDatasetInfo();
+
+  if (status) {
+
+    status.textContent =
+      "Historical dataset cleared successfully.";
+
+  }
+}
+
+
+// ===============================
+// DATASET INFO
+// ===============================
+
+function updateDatasetInfo() {
+
+  const info =
+    document.getElementById("datasetInfo");
+
+  if (!info) return;
+
+  if (dataSource === "demo") {
+
+    info.textContent =
+      `${results.length} demo results loaded. Use "Replace & Analyse" to add your own dataset.`;
+
+    return;
+  }
+
+  if (results.length === 0) {
+
+    info.textContent =
+      "No historical results saved.";
+
+    return;
+  }
+
+  info.textContent =
+    `${results.length} historical results saved in this browser.`;
+}
+
+
+// ===============================
+// RESET PREDICTION DISPLAY
+// ===============================
+
+function resetPredictionDisplay() {
+
+  const prediction =
+    document.getElementById("predictionValue");
+
+  const confidence =
+    document.getElementById("confidenceValue");
+
+  if (prediction) {
+    prediction.textContent = "—";
+  }
+
+  if (confidence) {
+    confidence.textContent = "—";
+  }
+
+  const report =
+    document.getElementById("predictionReport");
+
+  if (report) {
+    report.remove();
+  }
+    }
 // ===============================
 // BUTTONS
 // ===============================
@@ -899,7 +1154,30 @@ if (analyseButton) {
   );
 
 }
+const addResultsButton =
+  document.getElementById("addResultsBtn");
 
+if (addResultsButton) {
+
+  addResultsButton.addEventListener(
+    "click",
+    addUserResults
+  );
+
+}
+
+
+const clearDataButton =
+  document.getElementById("clearDataBtn");
+
+if (clearDataButton) {
+
+  clearDataButton.addEventListener(
+    "click",
+    clearUserData
+  );
+
+}
 
 // ===============================
 // MOBILE MENU
