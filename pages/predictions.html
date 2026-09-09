@@ -38,11 +38,11 @@
     
     <section class="input-section">
 
-  <h2>Add Historical Results</h2>
+  <h2>Historical Results</h2>
 
   <p>
     Enter your historical results from oldest to newest.
-  Example: 7, 3, 8, 8, 2, 6
+    You can use commas, spaces or new lines.
   </p>
 
   <div class="result-input-area">
@@ -53,13 +53,27 @@
       placeholder="Example: 7, 3, 8, 8, 2, 6"
     >
 
-    <button id="analyseBtn">
-      Analyse Results
+    <button id="analyseBtn" type="button">
+      Replace & Analyse
+    </button>
+
+  </div>
+
+  <div class="data-actions">
+
+    <button id="addResultsBtn" type="button">
+      Add Results
+    </button>
+
+    <button id="clearDataBtn" type="button">
+      Clear Data
     </button>
 
   </div>
 
   <p id="inputStatus"></p>
+
+  <p id="datasetInfo"></p>
 
     </section>
 
